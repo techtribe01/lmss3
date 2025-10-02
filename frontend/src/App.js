@@ -430,15 +430,21 @@ const AdminDashboard = () => {
             <button className="btn-text">View All</button>
           </div>
           <div className="activity-list">
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="activity-item">
-                <div className="activity-avatar">👤</div>
-                <div className="activity-content">
-                  <p className="activity-title">Student {i} enrolled in React Masterclass</p>
-                  <p className="activity-time">{i * 2} hours ago</p>
-                </div>
+            {enrollments.length === 0 ? (
+              <div className="empty-state">
+                <p>📚 No recent enrollments</p>
               </div>
-            ))}
+            ) : (
+              enrollments.map(enroll => (
+                <div key={enroll.id} className="activity-item">
+                  <div className="activity-avatar">👤</div>
+                  <div className="activity-content">
+                    <p className="activity-title">{enroll.student_name} enrolled in {enroll.course_name}</p>
+                    <p className="activity-time">{new Date(enroll.enrolled_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
