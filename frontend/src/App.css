@@ -69,12 +69,13 @@ body {
 }
 
 .auth-card {
-  background: white;
+  background: var(--bg-primary);
   border-radius: 16px;
   padding: 48px;
   width: 100%;
   max-width: 440px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-primary);
 }
 
 .auth-title {
