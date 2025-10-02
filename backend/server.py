@@ -2,13 +2,17 @@ from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
-from motor.motor_asyncio import AsyncIOMotorClient
 from typing import Optional, List
+from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta, timezone
 import jwt
 import bcrypt
 import uuid
+from supabase import create_client, Client
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI()
 
@@ -21,10 +25,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MongoDB setup
-MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-client = AsyncIOMotorClient(MONGO_URL)
-db = client.lms_database
+# Supabase setup
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+
+if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+    raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment variables")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 # JWT Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
@@ -35,7 +43,7 @@ security = HTTPBearer()
 
 # Pydantic Models
 class UserBase(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    id: str
     username: str
     email: str
     full_name: str
@@ -87,10 +95,21 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    user = await db.users.find_one({"id": user_id})
-    if user is None:
+    
+    # Query Supabase for user
+    result = supabase.table("users").select("*").eq("id", user_id).execute()
+    
+    if not result.data or len(result.data) == 0:
         raise HTTPException(status_code=401, detail="User not found")
-    return UserBase(**user)
+    
+    user = result.data[0]
+    return UserBase(
+        id=user["id"],
+        username=user["username"],
+        email=user["email"],
+        full_name=user["full_name"],
+        role=user["role"]
+    )
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -101,18 +120,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Routes
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "service": "LMS Backend"}
+    return {"status": "healthy", "service": "LMS Backend with Supabase"}
 
 @app.post("/api/auth/register", response_model=Token)
 async def register(user: UserCreate):
     # Check if username exists
-    existing_user = await db.users.find_one({"username": user.username})
-    if existing_user:
+    existing_username = supabase.table("users").select("id").eq("username", user.username).execute()
+    if existing_username.data and len(existing_username.data) > 0:
         raise HTTPException(status_code=400, detail="Username already exists")
     
     # Check if email exists
-    existing_email = await db.users.find_one({"email": user.email})
-    if existing_email:
+    existing_email = supabase.table("users").select("id").eq("email", user.email).execute()
+    if existing_email.data and len(existing_email.data) > 0:
         raise HTTPException(status_code=400, detail="Email already exists")
     
     # Validate role
@@ -129,11 +148,15 @@ async def register(user: UserCreate):
         "email": user.email,
         "full_name": user.full_name,
         "role": user.role,
-        "password": hashed_pwd,
+        "password_hash": hashed_pwd,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.users.insert_one(new_user)
+    # Insert into Supabase
+    result = supabase.table("users").insert(new_user).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create user")
     
     # Create access token
     access_token = create_access_token(data={"sub": user_id, "role": user.role})
@@ -151,17 +174,16 @@ async def register(user: UserCreate):
 @app.post("/api/auth/login", response_model=Token)
 async def login(credentials: UserLogin):
     # Try to find user by username or email
-    user = await db.users.find_one({
-        "$or": [
-            {"username": credentials.username},
-            {"email": credentials.username}
-        ]
-    })
+    result = supabase.table("users").select("*").or_(
+        f"username.eq.{credentials.username},email.eq.{credentials.username}"
+    ).execute()
     
-    if not user:
+    if not result.data or len(result.data) == 0:
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
     
-    if not verify_password(credentials.password, user["password"]):
+    user = result.data[0]
+    
+    if not verify_password(credentials.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
     
     # Create access token
@@ -192,14 +214,18 @@ async def get_users(current_user: UserBase = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    users = await db.users.find().to_list(length=None)
+    result = supabase.table("users").select("*").execute()
+    
+    if not result.data:
+        return []
+    
     return [UserResponse(
         id=u["id"],
         username=u["username"],
         email=u["email"],
         full_name=u["full_name"],
         role=u["role"]
-    ) for u in users]
+    ) for u in result.data]
 
 if __name__ == "__main__":
     import uvicorn
