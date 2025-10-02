@@ -227,15 +227,18 @@ backend:
 
   - task: "Course Management - Update Course"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented PUT /api/courses/{course_id}. Admins can edit all courses. Mentors can only edit their own courses. Supports partial updates for title, description, mentor_id, batch_id, zoom_id, teams_id, video_urls."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Course updates work perfectly. Mentors can update their own courses successfully. Mentors correctly denied access to update other mentors' courses (403). Admins can update any course. Students correctly denied update access (403). Partial updates working correctly."
 
   - task: "Course Management - Delete Course"
     implemented: true
