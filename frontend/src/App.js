@@ -388,6 +388,27 @@ const DashboardLayout = ({ children, menuItems, role }) => {
 
 // ADMIN PAGES (DETAILED)
 const AdminDashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [enrollments, setEnrollments] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const loadData = async () => {
+      const dashboardStats = await mockService.getDashboardStats('admin', user?.id);
+      setStats(dashboardStats);
+      
+      const allEnrollments = await mockService.getEnrollments({});
+      setEnrollments(allEnrollments.slice(0, 5));
+      
+      const pendingCourses = await mockService.getCourses({ status: 'pending_approval' });
+      setCourses(pendingCourses);
+    };
+    loadData();
+  }, [user]);
+
+  if (!stats) return <div className="loading-screen">Loading...</div>;
+
   return (
     <div className="page-wrapper">
       <div className="page-header">
@@ -396,10 +417,10 @@ const AdminDashboard = () => {
       </div>
 
       <div className="stats-grid">
-        <StatCard icon="👥" label="Total Students" value="1,245" trend="↑ 12% this month" color="blue" />
-        <StatCard icon="👨‍🏫" label="Active Mentors" value="48" trend="↑ 5% this month" color="purple" />
-        <StatCard icon="📚" label="Total Courses" value="87" trend="↑ 8 new courses" color="green" />
-        <StatCard icon="💰" label="Revenue" value="$45,890" trend="↑ 23% this month" color="orange" />
+        <StatCard icon="👥" label="Total Students" value={stats.total_students} trend="Active learners" color="blue" />
+        <StatCard icon="👨‍🏫" label="Active Mentors" value={stats.total_mentors} trend="Teaching now" color="purple" />
+        <StatCard icon="📚" label="Total Courses" value={stats.total_courses} trend={`${stats.active_courses} active`} color="green" />
+        <StatCard icon="⏳" label="Pending Approvals" value={stats.pending_approvals} trend="Needs review" color="orange" />
       </div>
 
       <div className="dashboard-grid">
