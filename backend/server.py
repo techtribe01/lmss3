@@ -173,10 +173,12 @@ async def register(user: UserCreate):
 
 @app.post("/api/auth/login", response_model=Token)
 async def login(credentials: UserLogin):
-    # Try to find user by username or email
-    result = supabase.table("users").select("*").or_(
-        f"username.eq.{credentials.username},email.eq.{credentials.username}"
-    ).execute()
+    # Try to find user by username first
+    result = supabase.table("users").select("*").eq("username", credentials.username).execute()
+    
+    # If not found by username, try by email
+    if not result.data or len(result.data) == 0:
+        result = supabase.table("users").select("*").eq("email", credentials.username).execute()
     
     if not result.data or len(result.data) == 0:
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
