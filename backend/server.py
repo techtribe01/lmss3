@@ -1481,6 +1481,405 @@ async def get_certificate(certificate_id: str, current_user: UserBase = Depends(
     
     return CertificateResponse(**certificate)
 
+# ===== FEE REMINDER SYSTEM =====
+
+@app.post("/api/fee-reminders", response_model=FeeReminderResponse)
+async def create_fee_reminder(fee_reminder: FeeReminderCreate, current_user: UserBase = Depends(get_current_user)):
+    """Create fee reminder (admins only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create fee reminders")
+    
+    fee_reminder_data = {
+        "id": str(uuid.uuid4()),
+        "student_id": fee_reminder.student_id,
+        "amount": fee_reminder.amount,
+        "due_date": fee_reminder.due_date,
+        "description": fee_reminder.description,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("fee_reminders").insert(fee_reminder_data).execute()
+    return FeeReminderResponse(**result.data[0])
+
+@app.get("/api/fee-reminders", response_model=List[FeeReminderResponse])
+async def get_fee_reminders(student_id: str = None, status: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get fee reminders based on user role"""
+    query = supabase.table("fee_reminders").select("*")
+    
+    if current_user.role == "student":
+        # Students can only see their own fee reminders
+        query = query.eq("student_id", current_user.id)
+    elif current_user.role == "mentor":
+        # Mentors cannot access fee reminders
+        raise HTTPException(status_code=403, detail="Mentors cannot access fee reminders")
+    # Admins can see all fee reminders
+    
+    if student_id and current_user.role == "admin":
+        query = query.eq("student_id", student_id)
+    if status:
+        query = query.eq("status", status)
+    
+    result = query.order("due_date", desc=False).execute()
+    return [FeeReminderResponse(**f) for f in result.data]
+
+@app.get("/api/fee-reminders/student/{student_id}", response_model=List[FeeReminderResponse])
+async def get_student_fee_reminders(student_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get fee reminders for a specific student"""
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=403, detail="Students can only view their own fee reminders")
+    elif current_user.role == "mentor":
+        raise HTTPException(status_code=403, detail="Mentors cannot access fee reminders")
+    
+    result = supabase.table("fee_reminders").select("*").eq("student_id", student_id).order("due_date", desc=False).execute()
+    return [FeeReminderResponse(**f) for f in result.data]
+
+@app.put("/api/fee-reminders/{reminder_id}", response_model=FeeReminderResponse)
+async def update_fee_reminder(reminder_id: str, update: FeeReminderUpdate, current_user: UserBase = Depends(get_current_user)):
+    """Update fee reminder (admins only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update fee reminders")
+    
+    # Check if fee reminder exists
+    reminder_result = supabase.table("fee_reminders").select("*").eq("id", reminder_id).execute()
+    if not reminder_result.data:
+        raise HTTPException(status_code=404, detail="Fee reminder not found")
+    
+    # Prepare update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if update.amount is not None:
+        update_data["amount"] = update.amount
+    if update.due_date is not None:
+        update_data["due_date"] = update.due_date
+    if update.description is not None:
+        update_data["description"] = update.description
+    if update.status is not None:
+        update_data["status"] = update.status
+    
+    result = supabase.table("fee_reminders").update(update_data).eq("id", reminder_id).execute()
+    return FeeReminderResponse(**result.data[0])
+
+@app.delete("/api/fee-reminders/{reminder_id}")
+async def delete_fee_reminder(reminder_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Delete fee reminder (admins only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete fee reminders")
+    
+    # Check if fee reminder exists
+    reminder_result = supabase.table("fee_reminders").select("id").eq("id", reminder_id).execute()
+    if not reminder_result.data:
+        raise HTTPException(status_code=404, detail="Fee reminder not found")
+    
+    result = supabase.table("fee_reminders").delete().eq("id", reminder_id).execute()
+    return {"message": "Fee reminder deleted successfully"}
+
+@app.put("/api/fee-reminders/{reminder_id}/paid", response_model=FeeReminderResponse)
+async def mark_fee_as_paid(reminder_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Mark fee as paid (admins only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can mark fees as paid")
+    
+    # Check if fee reminder exists
+    reminder_result = supabase.table("fee_reminders").select("*").eq("id", reminder_id).execute()
+    if not reminder_result.data:
+        raise HTTPException(status_code=404, detail="Fee reminder not found")
+    
+    update_data = {
+        "status": "paid",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("fee_reminders").update(update_data).eq("id", reminder_id).execute()
+    return FeeReminderResponse(**result.data[0])
+
+# ===== MOCK INTERVIEW SCHEDULING SYSTEM =====
+
+@app.post("/api/mock-interviews", response_model=MockInterviewResponse)
+async def schedule_mock_interview(interview: MockInterviewCreate, current_user: UserBase = Depends(get_current_user)):
+    """Schedule mock interview (mentors and admins can schedule for any student, students for themselves)"""
+    if current_user.role == "student" and interview.student_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Students can only schedule interviews for themselves")
+    
+    # Check if mentor exists and is actually a mentor
+    if current_user.role != "admin":
+        mentor_result = supabase.table("users").select("role").eq("id", interview.mentor_id).execute()
+        if not mentor_result.data or mentor_result.data[0]["role"] != "mentor":
+            raise HTTPException(status_code=400, detail="Invalid mentor ID")
+    
+    interview_data = {
+        "id": str(uuid.uuid4()),
+        "student_id": interview.student_id,
+        "mentor_id": interview.mentor_id,
+        "scheduled_date": interview.scheduled_date,
+        "type": interview.type,
+        "duration": interview.duration or 60,
+        "status": "scheduled",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("mock_interviews").insert(interview_data).execute()
+    return MockInterviewResponse(**result.data[0])
+
+@app.get("/api/mock-interviews", response_model=List[MockInterviewResponse])
+async def get_mock_interviews(student_id: str = None, mentor_id: str = None, status: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get mock interviews based on user role"""
+    query = supabase.table("mock_interviews").select("*")
+    
+    if current_user.role == "student":
+        # Students can only see their own interviews
+        query = query.eq("student_id", current_user.id)
+    elif current_user.role == "mentor":
+        # Mentors can see interviews they are conducting
+        query = query.eq("mentor_id", current_user.id)
+        if student_id:
+            query = query.eq("student_id", student_id)
+    # Admins can see all interviews
+    else:
+        if student_id:
+            query = query.eq("student_id", student_id)
+        if mentor_id:
+            query = query.eq("mentor_id", mentor_id)
+    
+    if status:
+        query = query.eq("status", status)
+    
+    result = query.order("scheduled_date", desc=False).execute()
+    return [MockInterviewResponse(**i) for i in result.data]
+
+@app.get("/api/mock-interviews/student/{student_id}", response_model=List[MockInterviewResponse])
+async def get_student_interviews(student_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get mock interviews for a specific student"""
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=403, detail="Students can only view their own interviews")
+    
+    result = supabase.table("mock_interviews").select("*").eq("student_id", student_id).order("scheduled_date", desc=False).execute()
+    return [MockInterviewResponse(**i) for i in result.data]
+
+@app.get("/api/mock-interviews/mentor/{mentor_id}", response_model=List[MockInterviewResponse])
+async def get_mentor_interviews(mentor_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get mock interviews for a specific mentor"""
+    if current_user.role == "mentor" and current_user.id != mentor_id:
+        raise HTTPException(status_code=403, detail="Mentors can only view their own interviews")
+    
+    result = supabase.table("mock_interviews").select("*").eq("mentor_id", mentor_id).order("scheduled_date", desc=False).execute()
+    return [MockInterviewResponse(**i) for i in result.data]
+
+@app.put("/api/mock-interviews/{interview_id}", response_model=MockInterviewResponse)
+async def update_mock_interview(interview_id: str, update: MockInterviewUpdate, current_user: UserBase = Depends(get_current_user)):
+    """Update mock interview (participants and admins only)"""
+    # Check if interview exists
+    interview_result = supabase.table("mock_interviews").select("*").eq("id", interview_id).execute()
+    if not interview_result.data:
+        raise HTTPException(status_code=404, detail="Mock interview not found")
+    
+    interview = interview_result.data[0]
+    
+    # Check permissions
+    if current_user.role not in ["admin"] and current_user.id not in [interview["student_id"], interview["mentor_id"]]:
+        raise HTTPException(status_code=403, detail="You can only update interviews you're involved in")
+    
+    # Prepare update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if update.scheduled_date is not None:
+        update_data["scheduled_date"] = update.scheduled_date
+    if update.type is not None:
+        update_data["type"] = update.type
+    if update.duration is not None:
+        update_data["duration"] = update.duration
+    if update.status is not None:
+        update_data["status"] = update.status
+    
+    result = supabase.table("mock_interviews").update(update_data).eq("id", interview_id).execute()
+    return MockInterviewResponse(**result.data[0])
+
+@app.delete("/api/mock-interviews/{interview_id}")
+async def cancel_mock_interview(interview_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Cancel mock interview (participants and admins only)"""
+    # Check if interview exists
+    interview_result = supabase.table("mock_interviews").select("*").eq("id", interview_id).execute()
+    if not interview_result.data:
+        raise HTTPException(status_code=404, detail="Mock interview not found")
+    
+    interview = interview_result.data[0]
+    
+    # Check permissions
+    if current_user.role not in ["admin"] and current_user.id not in [interview["student_id"], interview["mentor_id"]]:
+        raise HTTPException(status_code=403, detail="You can only cancel interviews you're involved in")
+    
+    # Update status to cancelled instead of deleting
+    update_data = {
+        "status": "cancelled",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("mock_interviews").update(update_data).eq("id", interview_id).execute()
+    return {"message": "Mock interview cancelled successfully"}
+
+@app.post("/api/mock-interviews/{interview_id}/feedback", response_model=MockInterviewResponse)
+async def add_interview_feedback(interview_id: str, feedback: InterviewFeedback, current_user: UserBase = Depends(get_current_user)):
+    """Add feedback to mock interview (mentors and admins only)"""
+    # Check if interview exists
+    interview_result = supabase.table("mock_interviews").select("*").eq("id", interview_id).execute()
+    if not interview_result.data:
+        raise HTTPException(status_code=404, detail="Mock interview not found")
+    
+    interview = interview_result.data[0]
+    
+    # Check if user is the mentor for this interview or admin
+    if current_user.role not in ["admin"] and (current_user.role != "mentor" or current_user.id != interview["mentor_id"]):
+        raise HTTPException(status_code=403, detail="Only the assigned mentor or admin can add feedback")
+    
+    update_data = {
+        "feedback": feedback.feedback,
+        "score": feedback.score,
+        "status": "completed",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("mock_interviews").update(update_data).eq("id", interview_id).execute()
+    return MockInterviewResponse(**result.data[0])
+
+@app.get("/api/mock-interviews/{interview_id}/feedback", response_model=MockInterviewResponse)
+async def get_interview_feedback(interview_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get feedback for mock interview"""
+    # Check if interview exists
+    interview_result = supabase.table("mock_interviews").select("*").eq("id", interview_id).execute()
+    if not interview_result.data:
+        raise HTTPException(status_code=404, detail="Mock interview not found")
+    
+    interview = interview_result.data[0]
+    
+    # Check permissions - participants can view feedback
+    if current_user.role not in ["admin"] and current_user.id not in [interview["student_id"], interview["mentor_id"]]:
+        raise HTTPException(status_code=403, detail="You can only view feedback for interviews you're involved in")
+    
+    return MockInterviewResponse(**interview)
+
+# ===== PROGRESS REPORTING SYSTEM =====
+
+@app.get("/api/reports/progress", response_model=List[ProgressReportResponse])
+async def get_overall_progress_report(current_user: UserBase = Depends(get_current_user)):
+    """Get overall progress report for all students (admins only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view overall progress reports")
+    
+    # Get all students
+    students = supabase.table("users").select("id").eq("role", "student").execute()
+    if not students.data:
+        return []
+    
+    reports = []
+    for student in students.data:
+        report = await get_student_progress_report_data(student["id"])
+        reports.append(report)
+    
+    return reports
+
+@app.get("/api/reports/student/{student_id}/progress", response_model=ProgressReportResponse)
+async def get_student_progress_report(student_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get progress report for a specific student"""
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=403, detail="Students can only view their own progress")
+    
+    return await get_student_progress_report_data(student_id)
+
+async def get_student_progress_report_data(student_id: str) -> ProgressReportResponse:
+    """Helper function to generate student progress report data"""
+    # Get enrollments
+    enrollments = supabase.table("enrollments").select("*").eq("student_id", student_id).execute()
+    enrollment_count = len(enrollments.data) if enrollments.data else 0
+    completed_courses = len([e for e in enrollments.data if e["completion_status"] == "completed"]) if enrollments.data else 0
+    
+    # Get course IDs for enrolled courses
+    enrolled_course_ids = [e["course_id"] for e in enrollments.data] if enrollments.data else []
+    
+    # Get tasks for enrolled courses
+    total_tasks = 0
+    completed_tasks = 0
+    if enrolled_course_ids:
+        tasks = supabase.table("tasks").select("id").in_("course_id", enrolled_course_ids).execute()
+        total_tasks = len(tasks.data) if tasks.data else 0
+        
+        if total_tasks > 0:
+            task_ids = [t["id"] for t in tasks.data]
+            submissions = supabase.table("task_submissions").select("grade").eq("student_id", student_id).in_("task_id", task_ids).execute()
+            completed_tasks = len([s for s in submissions.data if s["grade"] is not None]) if submissions.data else 0
+    
+    # Get attendance percentage
+    attendance_records = supabase.table("attendance").select("check_in, check_out").eq("student_id", student_id).execute()
+    attendance_percentage = 0.0
+    if attendance_records.data:
+        attended_sessions = len([a for a in attendance_records.data if a["check_in"] is not None])
+        attendance_percentage = (attended_sessions / len(attendance_records.data)) * 100 if attendance_records.data else 0.0
+    
+    # Get average grade
+    average_grade = None
+    if enrolled_course_ids:
+        task_ids_query = supabase.table("tasks").select("id").in_("course_id", enrolled_course_ids).execute()
+        if task_ids_query.data:
+            task_ids = [t["id"] for t in task_ids_query.data]
+            graded_submissions = supabase.table("task_submissions").select("grade").eq("student_id", student_id).in_("task_id", task_ids).not_.is_("grade", "null").execute()
+            if graded_submissions.data:
+                grades = [float(s["grade"]) for s in graded_submissions.data]
+                average_grade = sum(grades) / len(grades) if grades else None
+    
+    # Get certificates count
+    certificates = supabase.table("certificates").select("id").eq("student_id", student_id).execute()
+    certificates_earned = len(certificates.data) if certificates.data else 0
+    
+    # Get last activity (most recent task submission or attendance)
+    last_activity = None
+    recent_submission = supabase.table("task_submissions").select("submitted_at").eq("student_id", student_id).order("submitted_at", desc=True).limit(1).execute()
+    recent_attendance = supabase.table("attendance").select("created_at").eq("student_id", student_id).order("created_at", desc=True).limit(1).execute()
+    
+    submission_date = recent_submission.data[0]["submitted_at"] if recent_submission.data else None
+    attendance_date = recent_attendance.data[0]["created_at"] if recent_attendance.data else None
+    
+    if submission_date and attendance_date:
+        last_activity = max(submission_date, attendance_date)
+    elif submission_date:
+        last_activity = submission_date
+    elif attendance_date:
+        last_activity = attendance_date
+    
+    return ProgressReportResponse(
+        student_id=student_id,
+        enrollment_count=enrollment_count,
+        completed_courses=completed_courses,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        attendance_percentage=round(attendance_percentage, 2),
+        average_grade=round(average_grade, 2) if average_grade else None,
+        certificates_earned=certificates_earned,
+        last_activity=last_activity
+    )
+
+@app.get("/api/reports/course/{course_id}/progress", response_model=List[ProgressReportResponse])
+async def get_course_progress_report(course_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get progress report for all students in a specific course"""
+    # Check permissions
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", course_id).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only view progress for your own courses")
+    elif current_user.role == "student":
+        raise HTTPException(status_code=403, detail="Students cannot view course progress reports")
+    
+    # Get all students enrolled in the course
+    enrollments = supabase.table("enrollments").select("student_id").eq("course_id", course_id).execute()
+    if not enrollments.data:
+        return []
+    
+    reports = []
+    for enrollment in enrollments.data:
+        report = await get_student_progress_report_data(enrollment["student_id"])
+        report.course_id = course_id  # Add course context
+        reports.append(report)
+    
+    return reports
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
