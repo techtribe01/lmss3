@@ -153,12 +153,17 @@ body {
 
 .error-message {
   padding: 12px;
-  background: #fee;
-  border: 1px solid #fcc;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--error);
   border-radius: 8px;
-  color: #c33;
+  color: var(--error);
   font-size: 14px;
   text-align: center;
+}
+
+/* Dark theme specific error message */
+[data-theme="dark"] .error-message {
+  background: rgba(220, 38, 38, 0.1);
 }
 
 .auth-button {
