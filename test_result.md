@@ -447,16 +447,19 @@ metadata:
 
 test_plan:
   current_focus:
-    - "User Authentication - Register (Supabase)"
-    - "User Authentication - Login (Supabase)"
-    - "Get Current User (Supabase)"
-    - "Get All Users - Admin Only (Supabase)"
+    - "Course Management - Create Course"
+    - "Course Management - List Courses"
+    - "Course Management - Get Single Course"
+    - "Course Management - Update Course"
+    - "Course Management - Delete Course"
+    - "Course Management - Approve/Reject Course"
+    - "Course Management - Get Mentor Courses"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "🚀 SUPABASE MIGRATION COMPLETE - Phase 1: Successfully migrated backend from MongoDB to Supabase PostgreSQL. Created complete database schema with 11 tables. Updated all authentication endpoints (register, login, get_me, get_users) to use Supabase client. Backend running on http://0.0.0.0:8001. Health check confirms 'LMS Backend with Supabase'. All 4 authentication endpoints need testing with new Supabase integration."
+    message: "🚀 PHASE 2 - COURSE MANAGEMENT COMPLETE: Implemented 7 course management endpoints with complete CRUD operations and role-based access control. Features: Create courses (admin/mentor), List with role-based filtering (students see approved only, mentors see approved+own, admins see all), Get single course with access control, Update courses (mentors own only, admins all), Delete (admin only), Approve/Reject workflow (admin only), Get courses by mentor. All endpoints use Supabase PostgreSQL. Ready for comprehensive testing."
   - agent: "testing"
     message: "✅ COMPREHENSIVE TESTING COMPLETE: All 4 Supabase authentication endpoints fully tested and working. Fixed critical Supabase Python client OR query issue (v1.0.3 limitation). Verified: 1) User registration with all roles, 2) Username/email login functionality, 3) Password hashing security (bcrypt), 4) JWT authentication, 5) Role-based access control, 6) Data persistence in Supabase database, 7) Proper error handling. All 16 test cases passed. Backend authentication system is production-ready."
