@@ -165,6 +165,81 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Created beautiful login page with form validation. Redirects to role-based dashboard after login."
+      - working: "NA"
+        agent: "main"
+        comment: "Updated login to accept username OR email. Backend and frontend both updated."
+  
+  - task: "Mock Data Services"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/services/mockService.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented comprehensive mock service layer with CRUD operations for all entities (Users, Courses, Batches, Attendance, Grades, Tasks, Submissions, Enrollments, Certificates). In-memory storage with simulated API delays."
+  
+  - task: "Courses Management CRUD"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Full CRUD for courses with filters, search, create/edit modal, delete confirmation. Empty states for no data. Displays courses in grid with edit/delete actions."
+  
+  - task: "Mentor Management"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "List and edit mentors with department filtering. View mentor details in table format."
+  
+  - task: "Student Management"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "List students with profile view modal showing enrollment, attendance, and task completion stats."
+  
+  - task: "Reports with Attendance & Grades"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Three-tab reports page (Overview, Attendance, Grades) showing attendance records and grade entries with filtering and empty states."
+  
+  - task: "Assignments & Grading"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "View submissions (pending/graded tabs), grade submissions with score and feedback, view submission details."
   
   - task: "Register Page"
     implemented: true
