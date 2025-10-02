@@ -107,51 +107,63 @@ user_problem_statement: "Build Stage 1 LMS with navigation and empty screens. Im
 backend:
   - task: "User Authentication - Register"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented JWT-based registration endpoint with bcrypt password hashing. Supports role selection (admin/mentor/student). Validates unique username and email."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Registration endpoint working correctly. Successfully creates users with unique usernames/emails, returns JWT tokens, validates roles (admin/mentor/student). Proper error handling for duplicate registrations."
   
   - task: "User Authentication - Login"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented JWT-based login endpoint with password verification. Returns access token and user data."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Updated login functionality working perfectly. Successfully accepts BOTH username OR email in the username field. MongoDB query uses $or operator to search both fields. Error messages correctly say 'Invalid username/email or password'. All test cases passed: login with username, login with email, invalid credentials rejection."
   
   - task: "Get Current User"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented protected endpoint to get current user info using JWT token. Uses HTTPBearer security."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Get current user endpoint working correctly. Properly validates JWT tokens, returns user data for authenticated requests, correctly rejects requests without tokens (403 status)."
   
   - task: "Get All Users (Admin Only)"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented admin-only endpoint to fetch all users. Includes role-based access control."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Admin-only users endpoint working correctly. Returns list of all users for admin role, properly rejects non-admin access with 403 status. Role-based access control functioning as expected."
 
 frontend:
   - task: "Login Page"
