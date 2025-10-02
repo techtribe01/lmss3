@@ -10,7 +10,7 @@ import sys
 from typing import Dict, Any, Optional
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://lms-compliance.preview.emergentagent.com/api"
+BACKEND_URL = "https://lms-audit.preview.emergentagent.com/api"
 
 class MissingFeaturesDetector:
     def __init__(self):

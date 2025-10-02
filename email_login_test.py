@@ -7,7 +7,7 @@ import requests
 import json
 import time
 
-BACKEND_URL = "https://lms-compliance.preview.emergentagent.com/api"
+BACKEND_URL = "https://lms-audit.preview.emergentagent.com/api"
 
 def test_email_login():
     """Test that users can login with email instead of username"""
