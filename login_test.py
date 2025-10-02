@@ -9,7 +9,7 @@ import sys
 import time
 
 # Backend URL
-BACKEND_URL = "https://edusim-lms.preview.emergentagent.com/api"
+BACKEND_URL = "https://admiring-elbakyan.preview.emergentagent.com/api"
 
 def log_test(test_name: str, success: bool, message: str = ""):
     status = "✅ PASS" if success else "❌ FAIL"

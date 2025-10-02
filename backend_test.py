@@ -10,7 +10,7 @@ import sys
 from typing import Dict, Any, Optional
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://edusim-lms.preview.emergentagent.com/api"
+BACKEND_URL = "https://admiring-elbakyan.preview.emergentagent.com/api"
 
 class LMSAPITester:
     def __init__(self):
