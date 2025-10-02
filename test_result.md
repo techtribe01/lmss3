@@ -588,12 +588,16 @@ metadata:
 
 test_plan:
   current_focus: 
-    - "Enrollment Management System"
-    - "Task/Assignment System"
-    - "Attendance Tracking System"
+    - "Comprehensive LMS Validation Against All Requirements"
+    - "Admin Features Validation"
+    - "Mentor Features Validation"
+    - "Student Features Validation"
+    - "Security & Eligibility Validation"
+    - "UI/UX Validation"
+    - "Notifications & Email Alerts Validation"
   stuck_tasks: []
-  test_all: false
-  test_priority: "high_first"
+  test_all: true
+  test_priority: "comprehensive_validation"
 
 agent_communication:
   - agent: "main"
