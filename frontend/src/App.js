@@ -501,6 +501,69 @@ const AdminDashboard = () => {
 
 const CoursesManagement = () => {
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [filters, setFilters] = useState({ category: 'All', status: 'All', level: 'All', search: '' });
+  const [formData, setFormData] = useState({
+    title: '', description: '', category: 'Programming', level: 'Beginner', 
+    duration: '', instructor_id: '', instructor_name: '', price: '', status: 'draft',
+    total_lessons: '', image: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  });
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadCourses();
+  }, [filters]);
+
+  const loadCourses = async () => {
+    const data = await mockService.getCourses(filters);
+    setCourses(data);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingCourse) {
+        await mockService.updateCourse(editingCourse.id, formData);
+        alert('Course updated successfully!');
+      } else {
+        await mockService.createCourse({...formData, instructor_id: user.id, instructor_name: user.full_name});
+        alert('Course created successfully!');
+      }
+      setShowModal(false);
+      resetForm();
+      loadCourses();
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  };
+
+  const handleEdit = (course) => {
+    setEditingCourse(course);
+    setFormData(course);
+    setShowModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (courseToDelete) {
+      await mockService.deleteCourse(courseToDelete.id);
+      alert('Course deleted successfully!');
+      setShowDeleteModal(false);
+      setCourseToDelete(null);
+      loadCourses();
+    }
+  };
+
+  const resetForm = () => {
+    setEditingCourse(null);
+    setFormData({
+      title: '', description: '', category: 'Programming', level: 'Beginner',
+      duration: '', instructor_id: '', instructor_name: '', price: '', status: 'draft',
+      total_lessons: '', image: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    });
+  };
   
   return (
     <div className="page-wrapper">
@@ -509,72 +572,151 @@ const CoursesManagement = () => {
           <h1 className="page-title">Courses Management</h1>
           <p className="page-subtitle">Create and manage all courses</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>
+        <button className="btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
           + Create New Course
         </button>
       </div>
 
-      <SearchFilter 
-        filters={[
-          { label: 'Category', options: ['All', 'Programming', 'Design', 'Business'] },
-          { label: 'Status', options: ['All', 'Active', 'Draft', 'Archived'] },
-          { label: 'Level', options: ['All', 'Beginner', 'Intermediate', 'Advanced'] }
-        ]}
-      />
-
-      <div className="courses-grid">
-        {[1,2,3,4,5,6].map(i => (
-          <CourseCard 
-            key={i}
-            title={`Course Title ${i}`}
-            instructor="Instructor Name"
-            students={120 + i * 10}
-            image="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-            category="Programming"
-            duration="8 weeks"
-            level="Intermediate"
-          />
-        ))}
+      <div className="search-filter-bar">
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input type="text" placeholder="Search courses..." 
+            onChange={(e) => setFilters({...filters, search: e.target.value})} />
+        </div>
+        <div className="filter-group">
+          <select className="filter-select" onChange={(e) => setFilters({...filters, category: e.target.value})}>
+            <option value="All">All Categories</option>
+            <option value="Programming">Programming</option>
+            <option value="Design">Design</option>
+            <option value="Business">Business</option>
+            <option value="Data Science">Data Science</option>
+          </select>
+          <select className="filter-select" onChange={(e) => setFilters({...filters, status: e.target.value})}>
+            <option value="All">All Status</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="pending_approval">Pending Approval</option>
+          </select>
+          <select className="filter-select" onChange={(e) => setFilters({...filters, level: e.target.value})}>
+            <option value="All">All Levels</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+        </div>
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create New Course">
-        <form className="modal-form">
+      {courses.length === 0 ? (
+        <div className="empty-state-large">
+          <div className="empty-icon">📚</div>
+          <h3>No Courses Found</h3>
+          <p>Create your first course to get started</p>
+          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Create Course</button>
+        </div>
+      ) : (
+        <div className="courses-grid">
+          {courses.map(course => (
+            <div key={course.id} className="course-card">
+              <div className="course-image" style={{ background: course.image }}>
+                <span className="course-badge">{course.category}</span>
+                <div className="course-actions-overlay">
+                  <button className="btn-icon-white" onClick={() => handleEdit(course)} title="Edit">✏️</button>
+                  <button className="btn-icon-white" onClick={() => { setCourseToDelete(course); setShowDeleteModal(true); }} title="Delete">🗑️</button>
+                </div>
+              </div>
+              <div className="course-body">
+                <h3 className="course-title">{course.title}</h3>
+                <p className="course-instructor">👨‍🏫 {course.instructor_name}</p>
+                <div className="course-meta">
+                  <span className="meta-item">⏱️ {course.duration}</span>
+                  <span className="meta-item">📊 {course.level}</span>
+                  <span className="meta-item">👥 {course.total_students} students</span>
+                </div>
+                <div className="course-footer">
+                  <span className={`badge badge-${course.status === 'active' ? 'success' : course.status === 'draft' ? 'secondary' : 'warning'}`}>
+                    {course.status.replace('_', ' ')}
+                  </span>
+                  <span className="course-price">${course.price}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }} 
+        title={editingCourse ? 'Edit Course' : 'Create New Course'}>
+        <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Course Title</label>
-            <input type="text" placeholder="Enter course title" />
+            <label>Course Title *</label>
+            <input type="text" placeholder="Enter course title" required
+              value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
           </div>
-          <div className="form-group">
-            <label>Category</label>
-            <select>
-              <option>Select category</option>
-              <option>Programming</option>
-              <option>Design</option>
-              <option>Business</option>
-            </select>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Category *</label>
+              <select required value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                <option value="Programming">Programming</option>
+                <option value="Design">Design</option>
+                <option value="Business">Business</option>
+                <option value="Data Science">Data Science</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Level *</label>
+              <select required value={formData.level} onChange={(e) => setFormData({...formData, level: e.target.value})}>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+            </div>
           </div>
           <div className="form-row">
             <div className="form-group">
               <label>Duration</label>
-              <input type="text" placeholder="e.g. 8 weeks" />
+              <input type="text" placeholder="e.g. 8 weeks" 
+                value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} />
             </div>
             <div className="form-group">
-              <label>Level</label>
-              <select>
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
-              </select>
+              <label>Price ($)</label>
+              <input type="number" placeholder="299" 
+                value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
             </div>
           </div>
           <div className="form-group">
-            <label>Description</label>
-            <textarea rows="4" placeholder="Course description..."></textarea>
+            <label>Total Lessons</label>
+            <input type="number" placeholder="45" 
+              value={formData.total_lessons} onChange={(e) => setFormData({...formData, total_lessons: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label>Description *</label>
+            <textarea rows="4" placeholder="Course description..." required
+              value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
+          </div>
+          <div className="form-group">
+            <label>Status</label>
+            <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="pending_approval">Pending Approval</option>
+            </select>
           </div>
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-            <button type="submit" className="btn-primary">Create Course</button>
+            <button type="button" className="btn-secondary" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</button>
+            <button type="submit" className="btn-primary">{editingCourse ? 'Update' : 'Create'} Course</button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Course">
+        <div className="modal-form">
+          <p>Are you sure you want to delete "<strong>{courseToDelete?.title}</strong>"?</p>
+          <p className="text-muted">This action cannot be undone. All related batches and enrollments will be affected.</p>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+            <button type="button" className="btn-danger" onClick={handleDelete}>Delete Course</button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
