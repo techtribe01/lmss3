@@ -1282,55 +1282,151 @@ const MockInterviews = () => {
 };
 
 const AssignmentsGrading = () => {
+  const [activeTab, setActiveTab] = useState('pending');
+  const [submissions, setSubmissions] = useState([]);
+  const [showGradeModal, setShowGradeModal] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [gradeData, setGradeData] = useState({ score: '', feedback: '' });
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadSubmissions();
+  }, [activeTab]);
+
+  const loadSubmissions = async () => {
+    const allSubmissions = await mockService.getSubmissions({});
+    if (activeTab === 'pending') {
+      setSubmissions(allSubmissions.filter(s => s.status === 'pending'));
+    } else {
+      setSubmissions(allSubmissions.filter(s => s.status === 'graded'));
+    }
+  };
+
+  const handleGrade = (submission) => {
+    setSelectedSubmission(submission);
+    setGradeData({ score: '', feedback: '' });
+    setShowGradeModal(true);
+  };
+
+  const submitGrade = async (e) => {
+    e.preventDefault();
+    try {
+      await mockService.gradeSubmission(selectedSubmission.id, {
+        score: parseInt(gradeData.score),
+        feedback: gradeData.feedback,
+        graded_by: user.id
+      });
+      alert('Submission graded successfully!');
+      setShowGradeModal(false);
+      setSelectedSubmission(null);
+      loadSubmissions();
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  };
+
+  const pendingCount = submissions.filter(s => s.status === 'pending').length;
+  const gradedCount = submissions.filter(s => s.status === 'graded').length;
+
   return (
     <div className="page-wrapper">
       <div className="page-header">
-        <h1 className="page-title">Assignments Grading</h1>
+        <h1 className="page-title">Assignments & Submissions</h1>
         <p className="page-subtitle">Review and grade student assignments</p>
       </div>
 
       <div className="tabs-container">
         <div className="tabs">
-          <button className="tab active">Pending <span className="tab-count">24</span></button>
-          <button className="tab">Graded <span className="tab-count">156</span></button>
-          <button className="tab">Resubmitted <span className="tab-count">8</span></button>
+          <button className={`tab ${activeTab === 'pending' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('pending')}>
+            Pending <span className="tab-count">{pendingCount}</span>
+          </button>
+          <button className={`tab ${activeTab === 'graded' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('graded')}>
+            Graded <span className="tab-count">{gradedCount}</span>
+          </button>
         </div>
       </div>
 
-      <SearchFilter filters={[
-        { label: 'Course', options: ['All', 'React', 'Python'] },
-        { label: 'Priority', options: ['All', 'Urgent', 'Normal'] }
-      ]} />
+      {submissions.length === 0 ? (
+        <div className="empty-state-large">
+          <div className="empty-icon">📝</div>
+          <h3>No {activeTab} submissions</h3>
+          <p>All submissions have been processed</p>
+        </div>
+      ) : (
+        <div className="assignment-list">
+          {submissions.map(submission => (
+            <div key={submission.id} className="assignment-card">
+              <div className="assignment-header">
+                <div>
+                  <h3>{submission.task_title}</h3>
+                  <p className="text-muted">Submitted by: {submission.student_name}</p>
+                </div>
+                <span className={`badge badge-${submission.status === 'pending' ? 'warning' : 'success'}`}>
+                  {submission.status}
+                </span>
+              </div>
+              <div className="assignment-body">
+                <div className="assignment-meta">
+                  <span>📅 Submitted: {new Date(submission.submitted_at).toLocaleDateString()}</span>
+                  {submission.submission_url && <span>🔗 URL provided</span>}
+                </div>
+                {submission.submission_text && (
+                  <p className="assignment-description">{submission.submission_text}</p>
+                )}
+                {submission.score !== null && (
+                  <div className="grade-display">
+                    <strong>Score: {submission.score}/100</strong>
+                    {submission.feedback && <p>Feedback: {submission.feedback}</p>}
+                  </div>
+                )}
+              </div>
+              <div className="assignment-actions">
+                {submission.submission_url && (
+                  <a href={submission.submission_url} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                    👁️ View Submission
+                  </a>
+                )}
+                {submission.status === 'pending' && (
+                  <button className="btn-primary" onClick={() => handleGrade(submission)}>📝 Grade</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="assignment-list">
-        {[1,2,3,4].map(i => (
-          <div key={i} className="assignment-card">
-            <div className="assignment-header">
-              <div>
-                <h3>Assignment Title {i}</h3>
-                <p className="text-muted">Course: React Masterclass • Submitted by: Student Name</p>
+      <Modal isOpen={showGradeModal} onClose={() => setShowGradeModal(false)} title="Grade Submission">
+        <form className="modal-form" onSubmit={submitGrade}>
+          {selectedSubmission && (
+            <>
+              <div className="form-group">
+                <label>Student: <strong>{selectedSubmission.student_name}</strong></label>
+                <label>Task: <strong>{selectedSubmission.task_title}</strong></label>
               </div>
-              <span className="badge badge-warning">Pending</span>
-            </div>
-            <div className="assignment-body">
-              <div className="assignment-meta">
-                <span>📅 Submitted: Jan 14, 2024</span>
-                <span>⏰ Due: Jan 15, 2024</span>
-                <span>📎 3 files attached</span>
+              <div className="form-group">
+                <label>Score (out of 100) *</label>
+                <input type="number" min="0" max="100" required
+                  value={gradeData.score} 
+                  onChange={(e) => setGradeData({...gradeData, score: e.target.value})} 
+                  placeholder="Enter score" />
               </div>
-              <div className="assignment-files">
-                <div className="file-chip">📄 assignment.pdf</div>
-                <div className="file-chip">💻 code.zip</div>
-                <div className="file-chip">📊 presentation.pptx</div>
+              <div className="form-group">
+                <label>Feedback *</label>
+                <textarea rows="4" required
+                  value={gradeData.feedback} 
+                  onChange={(e) => setGradeData({...gradeData, feedback: e.target.value})} 
+                  placeholder="Provide feedback to the student..."></textarea>
               </div>
-            </div>
-            <div className="assignment-actions">
-              <button className="btn-secondary">👁️ Review</button>
-              <button className="btn-primary">📝 Grade</button>
-            </div>
+            </>
+          )}
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowGradeModal(false)}>Cancel</button>
+            <button type="submit" className="btn-primary">Submit Grade</button>
           </div>
-        ))}
-      </div>
+        </form>
+      </Modal>
     </div>
   );
 };
