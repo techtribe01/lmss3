@@ -858,6 +858,24 @@ const MentorManagement = () => {
 };
 
 const StudentManagement = () => {
+  const [students, setStudents] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  const loadStudents = async () => {
+    const allStudents = await mockService.getUsers('student');
+    setStudents(allStudents);
+  };
+
+  const handleViewProfile = (student) => {
+    setSelectedStudent(student);
+    setShowModal(true);
+  };
+
   return (
     <div className="page-wrapper">
       <div className="page-header">
@@ -865,32 +883,72 @@ const StudentManagement = () => {
           <h1 className="page-title">Student Management</h1>
           <p className="page-subtitle">Manage student accounts and enrollments</p>
         </div>
-        <button className="btn-primary">+ Add Student</button>
       </div>
 
-      <SearchFilter 
-        filters={[
-          { label: 'Status', options: ['All', 'Active', 'Inactive', 'Suspended'] },
-          { label: 'Course', options: ['All Courses', 'React', 'Python', 'Design'] }
-        ]}
-      />
+      <div className="search-filter-bar">
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input type="text" placeholder="Search students..." />
+        </div>
+      </div>
 
       <div className="dashboard-card">
-        <DataTable 
-          columns={['Student ID', 'Name', 'Email', 'Enrolled Courses', 'Progress', 'Join Date', 'Status']}
-          data={[
-            ['STU001', 'Alice Brown', 'alice@example.com', '3', <div className="mini-progress"><div style={{width: '75%'}}></div></div>, '2024-01-10', <span className="badge badge-success">Active</span>],
-            ['STU002', 'Bob Wilson', 'bob@example.com', '5', <div className="mini-progress"><div style={{width: '60%'}}></div></div>, '2024-01-08', <span className="badge badge-success">Active</span>],
-            ['STU003', 'Carol Davis', 'carol@example.com', '2', <div className="mini-progress"><div style={{width: '40%'}}></div></div>, '2024-01-15', <span className="badge badge-success">Active</span>],
-            ['STU004', 'David Miller', 'david@example.com', '4', <div className="mini-progress"><div style={{width: '85%'}}></div></div>, '2024-01-05', <span className="badge badge-success">Active</span>]
-          ]}
-          actions={[
-            { icon: '👁️', label: 'View Profile' },
-            { icon: '📊', label: 'Progress' },
-            { icon: '✏️', label: 'Edit' }
-          ]}
-        />
+        {students.length === 0 ? (
+          <div className="empty-state">
+            <p>👥 No students found</p>
+          </div>
+        ) : (
+          <DataTable 
+            columns={['Name', 'Email', 'Username', 'Enrolled Courses', 'Attendance %', 'Join Date']}
+            data={students.map(student => [
+              student.full_name,
+              student.email,
+              student.username,
+              student.enrolled_courses || 0,
+              student.attendance_percentage ? `${student.attendance_percentage}%` : 'N/A',
+              new Date(student.created_at).toLocaleDateString()
+            ])}
+            actions={[
+              { icon: '👁️', label: 'View Profile' }
+            ]}
+          />
+        )}
       </div>
+
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setSelectedStudent(null); }} title="Student Profile">
+        {selectedStudent && (
+          <div className="profile-view">
+            <div className="profile-header">
+              <div className="profile-avatar">👤</div>
+              <div>
+                <h3>{selectedStudent.full_name}</h3>
+                <p className="text-muted">{selectedStudent.email}</p>
+              </div>
+            </div>
+            <div className="profile-stats">
+              <div className="stat-item">
+                <span className="stat-label">Enrolled Courses</span>
+                <span className="stat-value">{selectedStudent.enrolled_courses || 0}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Completed Courses</span>
+                <span className="stat-value">{selectedStudent.completed_courses || 0}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Attendance</span>
+                <span className="stat-value">{selectedStudent.attendance_percentage || 0}%</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Tasks Completed</span>
+                <span className="stat-value">{selectedStudent.completed_tasks || 0}/{selectedStudent.total_tasks || 0}</span>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Close</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
