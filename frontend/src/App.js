@@ -982,7 +982,7 @@ const CoursesManagement = () => {
               </div>
             </div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetForm(); }} 
