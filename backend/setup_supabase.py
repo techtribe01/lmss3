@@ -8,8 +8,8 @@ import os
 
 load_dotenv()
 
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+SUPABASE_URL = os.environ.get('')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rcnNseGNjYW9nb2dvdm1uaWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTM4MTg1OCwiZXhwIjoyMDc0OTU3ODU4fQ.l4N9wFqn5KVn81fcuJ55HF8_LCfQzdc_vqpxr7qRTjY')
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
