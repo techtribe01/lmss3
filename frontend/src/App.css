@@ -159,6 +159,11 @@ body {
   margin-top: 8px;
 }
 
+/* Utility Classes */
+.w-full {
+  width: 100%;
+}
+
 .auth-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
