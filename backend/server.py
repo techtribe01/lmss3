@@ -263,6 +263,200 @@ async def get_users(current_user: UserBase = Depends(get_current_user)):
         role=u["role"]
     ) for u in result.data]
 
+# ==================== COURSE MANAGEMENT ENDPOINTS ====================
+
+@app.post("/api/courses", response_model=CourseResponse)
+async def create_course(course: CourseCreate, current_user: UserBase = Depends(get_current_user)):
+    """Create a new course (Admin or Mentor)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only admins and mentors can create courses")
+    
+    course_id = str(uuid.uuid4())
+    
+    # If mentor is creating, auto-assign to them
+    mentor_id = course.mentor_id if course.mentor_id else (current_user.id if current_user.role == "mentor" else None)
+    
+    new_course = {
+        "id": course_id,
+        "title": course.title,
+        "description": course.description,
+        "mentor_id": mentor_id,
+        "batch_id": course.batch_id,
+        "zoom_id": course.zoom_id,
+        "teams_id": course.teams_id,
+        "approval_status": "pending",
+        "video_urls": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("courses").insert(new_course).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create course")
+    
+    return CourseResponse(**result.data[0])
+
+@app.get("/api/courses", response_model=List[CourseResponse])
+async def get_courses(
+    approval_status: Optional[str] = None,
+    current_user: UserBase = Depends(get_current_user)
+):
+    """Get all courses based on user role and filters"""
+    query = supabase.table("courses").select("*")
+    
+    # Role-based filtering
+    if current_user.role == "student":
+        # Students only see approved courses
+        query = query.eq("approval_status", "approved")
+    elif current_user.role == "mentor":
+        # Mentors see approved courses + their own courses (any status)
+        # Note: Supabase Python client limitation - we'll fetch all and filter in Python
+        pass
+    # Admin sees all courses
+    
+    # Apply approval_status filter if provided
+    if approval_status and current_user.role == "admin":
+        query = query.eq("approval_status", approval_status)
+    
+    result = query.execute()
+    
+    if not result.data:
+        return []
+    
+    courses = result.data
+    
+    # Additional filtering for mentors
+    if current_user.role == "mentor":
+        courses = [
+            c for c in courses 
+            if c["approval_status"] == "approved" or c["mentor_id"] == current_user.id
+        ]
+    
+    return [CourseResponse(**c) for c in courses]
+
+@app.get("/api/courses/{course_id}", response_model=CourseResponse)
+async def get_course(course_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get a single course by ID"""
+    result = supabase.table("courses").select("*").eq("id", course_id).execute()
+    
+    if not result.data or len(result.data) == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    course = result.data[0]
+    
+    # Check access permissions
+    if current_user.role == "student" and course["approval_status"] != "approved":
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if current_user.role == "mentor":
+        if course["approval_status"] != "approved" and course["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return CourseResponse(**course)
+
+@app.put("/api/courses/{course_id}", response_model=CourseResponse)
+async def update_course(
+    course_id: str,
+    course_update: CourseUpdate,
+    current_user: UserBase = Depends(get_current_user)
+):
+    """Update a course (Admin or course mentor)"""
+    # Get existing course
+    result = supabase.table("courses").select("*").eq("id", course_id).execute()
+    
+    if not result.data or len(result.data) == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    existing_course = result.data[0]
+    
+    # Check permissions
+    if current_user.role == "mentor" and existing_course["mentor_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own courses")
+    
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    # Build update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if course_update.title is not None:
+        update_data["title"] = course_update.title
+    if course_update.description is not None:
+        update_data["description"] = course_update.description
+    if course_update.mentor_id is not None:
+        update_data["mentor_id"] = course_update.mentor_id
+    if course_update.batch_id is not None:
+        update_data["batch_id"] = course_update.batch_id
+    if course_update.zoom_id is not None:
+        update_data["zoom_id"] = course_update.zoom_id
+    if course_update.teams_id is not None:
+        update_data["teams_id"] = course_update.teams_id
+    if course_update.video_urls is not None:
+        update_data["video_urls"] = course_update.video_urls
+    
+    result = supabase.table("courses").update(update_data).eq("id", course_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to update course")
+    
+    return CourseResponse(**result.data[0])
+
+@app.delete("/api/courses/{course_id}")
+async def delete_course(course_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Delete a course (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete courses")
+    
+    result = supabase.table("courses").delete().eq("id", course_id).execute()
+    
+    if not result.data or len(result.data) == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    return {"message": "Course deleted successfully"}
+
+@app.put("/api/courses/{course_id}/approve", response_model=CourseResponse)
+async def approve_course(
+    course_id: str,
+    approval: CourseApproval,
+    current_user: UserBase = Depends(get_current_user)
+):
+    """Approve or reject a course (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can approve/reject courses")
+    
+    if approval.approval_status not in ["approved", "rejected", "pending"]:
+        raise HTTPException(status_code=400, detail="Invalid approval status")
+    
+    update_data = {
+        "approval_status": approval.approval_status,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("courses").update(update_data).eq("id", course_id).execute()
+    
+    if not result.data or len(result.data) == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    return CourseResponse(**result.data[0])
+
+@app.get("/api/courses/mentor/{mentor_id}", response_model=List[CourseResponse])
+async def get_mentor_courses(mentor_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get all courses for a specific mentor"""
+    # Admins can view any mentor's courses, mentors can only view their own
+    if current_user.role == "mentor" and current_user.id != mentor_id:
+        raise HTTPException(status_code=403, detail="You can only view your own courses")
+    
+    if current_user.role == "student":
+        raise HTTPException(status_code=403, detail="Students cannot access this endpoint")
+    
+    result = supabase.table("courses").select("*").eq("mentor_id", mentor_id).execute()
+    
+    if not result.data:
+        return []
+    
+    return [CourseResponse(**c) for c in result.data]
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
