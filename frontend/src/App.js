@@ -60,6 +60,117 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+// Reusable Components
+const StatCard = ({ icon, label, value, trend, color = 'blue' }) => (
+  <div className={`stat-card stat-card-${color}`}>
+    <div className="stat-icon">{icon}</div>
+    <div className="stat-content">
+      <div className="stat-label">{label}</div>
+      <div className="stat-value">{value}</div>
+      {trend && <div className="stat-trend">{trend}</div>}
+    </div>
+  </div>
+);
+
+const CourseCard = ({ title, instructor, students, progress, image, category, duration, level }) => (
+  <div className="course-card">
+    <div className="course-image" style={{ background: image }}>
+      {category && <span className="course-badge">{category}</span>}
+    </div>
+    <div className="course-body">
+      <h3 className="course-title">{title}</h3>
+      <p className="course-instructor">👨‍🏫 {instructor}</p>
+      <div className="course-meta">
+        {duration && <span className="meta-item">⏱️ {duration}</span>}
+        {level && <span className="meta-item">📊 {level}</span>}
+        {students && <span className="meta-item">👥 {students} students</span>}
+      </div>
+      {progress !== undefined && (
+        <div className="progress-container">
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+          </div>
+          <span className="progress-text">{progress}% Complete</span>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const DataTable = ({ columns, data, actions }) => (
+  <div className="data-table-container">
+    <table className="data-table">
+      <thead>
+        <tr>
+          {columns.map((col, idx) => (
+            <th key={idx}>{col}</th>
+          ))}
+          {actions && <th>Actions</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((row, idx) => (
+          <tr key={idx}>
+            {row.map((cell, cellIdx) => (
+              <td key={cellIdx}>{cell}</td>
+            ))}
+            {actions && (
+              <td>
+                <div className="table-actions">
+                  {actions.map((action, actIdx) => (
+                    <button key={actIdx} className={`btn-icon ${action.variant || ''}`} title={action.label}>
+                      {action.icon}
+                    </button>
+                  ))}
+                </div>
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{title}</h2>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SearchFilter = ({ onSearch, filters }) => (
+  <div className="search-filter-bar">
+    <div className="search-box">
+      <span className="search-icon">🔍</span>
+      <input type="text" placeholder="Search..." onChange={(e) => onSearch && onSearch(e.target.value)} />
+    </div>
+    {filters && (
+      <div className="filter-group">
+        {filters.map((filter, idx) => (
+          <select key={idx} className="filter-select">
+            <option>{filter.label}</option>
+            {filter.options.map((opt, optIdx) => (
+              <option key={optIdx} value={opt}>{opt}</option>
+            ))}
+          </select>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 // Login Page
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -87,7 +198,6 @@ const LoginPage = () => {
 
       login(data.access_token, data.user);
       
-      // Navigate based on role
       if (data.user.role === 'admin') navigate('/admin');
       else if (data.user.role === 'mentor') navigate('/mentor');
       else if (data.user.role === 'student') navigate('/student');
@@ -107,24 +217,12 @@ const LoginPage = () => {
           
           <div className="form-group">
             <label>Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              placeholder="Enter your username"
-            />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required placeholder="Enter your username" />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Enter your password"
-            />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Enter your password" />
           </div>
 
           <button type="submit" className="auth-button">Sign In</button>
@@ -141,11 +239,7 @@ const LoginPage = () => {
 // Register Page
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    full_name: '',
-    role: 'student'
+    username: '', email: '', password: '', full_name: '', role: 'student'
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -170,7 +264,6 @@ const RegisterPage = () => {
 
       login(data.access_token, data.user);
       
-      // Navigate based on role
       if (data.user.role === 'admin') navigate('/admin');
       else if (data.user.role === 'mentor') navigate('/mentor');
       else if (data.user.role === 'student') navigate('/student');
@@ -190,55 +283,27 @@ const RegisterPage = () => {
           
           <div className="form-group">
             <label>Full Name</label>
-            <input
-              type="text"
-              value={formData.full_name}
-              onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-              required
-              placeholder="Enter your full name"
-            />
+            <input type="text" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} required placeholder="Enter your full name" />
           </div>
 
           <div className="form-group">
             <label>Username</label>
-            <input
-              type="text"
-              value={formData.username}
-              onChange={(e) => setFormData({...formData, username: e.target.value})}
-              required
-              placeholder="Choose a username"
-            />
+            <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} required placeholder="Choose a username" />
           </div>
 
           <div className="form-group">
             <label>Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              required
-              placeholder="Enter your email"
-            />
+            <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required placeholder="Enter your email" />
           </div>
 
           <div className="form-group">
             <label>Password</label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              required
-              placeholder="Create a password"
-            />
+            <input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required placeholder="Create a password" />
           </div>
 
           <div className="form-group">
             <label>Role</label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({...formData, role: e.target.value})}
-              required
-            >
+            <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} required>
               <option value="student">Student</option>
               <option value="mentor">Mentor</option>
               <option value="admin">Admin</option>
@@ -276,11 +341,7 @@ const Sidebar = ({ isOpen, toggleSidebar, menuItems, role }) => {
         
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
-            <Link
-              key={index}
-              to={item.path}
-              className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
-            >
+            <Link key={index} to={item.path} className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}>
               <span className="sidebar-icon">{item.icon}</span>
               <span className="sidebar-text">{item.label}</span>
             </Link>
@@ -307,81 +368,1354 @@ const DashboardLayout = ({ children, menuItems, role }) => {
 
   return (
     <div className="dashboard-container">
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        menuItems={menuItems}
-        role={role}
-      />
+      <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} menuItems={menuItems} role={role} />
       
       <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <header className="top-header">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="menu-toggle">
-            ☰
-          </button>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="menu-toggle">☰</button>
           <div className="user-info">
             <span className="user-name">{user?.full_name}</span>
             <span className="user-role">{user?.role}</span>
           </div>
         </header>
         
-        <main className="page-content">
-          {children}
-        </main>
+        <main className="page-content">{children}</main>
       </div>
     </div>
   );
 };
 
-// Coming Soon Component
-const ComingSoon = ({ title, description }) => (
-  <div className="coming-soon">
-    <div className="coming-soon-content">
-      <h1 className="page-title">{title}</h1>
-      {description && <p className="page-description">{description}</p>}
-      <div className="placeholder-box">
-        <span className="placeholder-icon">🚧</span>
-        <h2>Coming Soon</h2>
-        <p>This feature is under development</p>
+// ADMIN PAGES (DETAILED)
+const AdminDashboard = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">Admin Dashboard</h1>
+        <p className="page-subtitle">Overview of system metrics and activities</p>
       </div>
+
+      <div className="stats-grid">
+        <StatCard icon="👥" label="Total Students" value="1,245" trend="↑ 12% this month" color="blue" />
+        <StatCard icon="👨‍🏫" label="Active Mentors" value="48" trend="↑ 5% this month" color="purple" />
+        <StatCard icon="📚" label="Total Courses" value="87" trend="↑ 8 new courses" color="green" />
+        <StatCard icon="💰" label="Revenue" value="$45,890" trend="↑ 23% this month" color="orange" />
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Recent Enrollments</h3>
+            <button className="btn-text">View All</button>
+          </div>
+          <div className="activity-list">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="activity-item">
+                <div className="activity-avatar">👤</div>
+                <div className="activity-content">
+                  <p className="activity-title">Student {i} enrolled in React Masterclass</p>
+                  <p className="activity-time">{i * 2} hours ago</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Course Performance</h3>
+            <select className="filter-select-sm">
+              <option>Last 7 days</option>
+              <option>Last 30 days</option>
+              <option>Last 3 months</option>
+            </select>
+          </div>
+          <div className="chart-placeholder">
+            <div className="chart-bars">
+              {[40, 65, 45, 80, 55, 70, 85].map((height, i) => (
+                <div key={i} className="chart-bar" style={{ height: `${height}%` }}>
+                  <span className="chart-label">Day {i+1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h3>Pending Actions</h3>
+          <span className="badge badge-warning">5 Items</span>
+        </div>
+        <DataTable 
+          columns={['Course Name', 'Mentor', 'Category', 'Status', 'Date']}
+          data={[
+            ['Advanced JavaScript', 'John Doe', 'Programming', <span className="badge badge-warning">Pending Approval</span>, '2024-01-15'],
+            ['UI/UX Design Fundamentals', 'Jane Smith', 'Design', <span className="badge badge-warning">Review Required</span>, '2024-01-14'],
+            ['Python for Data Science', 'Mike Johnson', 'Data Science', <span className="badge badge-warning">Pending Approval</span>, '2024-01-13']
+          ]}
+          actions={[
+            { icon: '✓', label: 'Approve', variant: 'success' },
+            { icon: '✕', label: 'Reject', variant: 'danger' }
+          ]}
+        />
+      </div>
+    </div>
+  );
+};
+
+const CoursesManagement = () => {
+  const [showModal, setShowModal] = useState(false);
+  
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Courses Management</h1>
+          <p className="page-subtitle">Create and manage all courses</p>
+        </div>
+        <button className="btn-primary" onClick={() => setShowModal(true)}>
+          + Create New Course
+        </button>
+      </div>
+
+      <SearchFilter 
+        filters={[
+          { label: 'Category', options: ['All', 'Programming', 'Design', 'Business'] },
+          { label: 'Status', options: ['All', 'Active', 'Draft', 'Archived'] },
+          { label: 'Level', options: ['All', 'Beginner', 'Intermediate', 'Advanced'] }
+        ]}
+      />
+
+      <div className="courses-grid">
+        {[1,2,3,4,5,6].map(i => (
+          <CourseCard 
+            key={i}
+            title={`Course Title ${i}`}
+            instructor="Instructor Name"
+            students={120 + i * 10}
+            image="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            category="Programming"
+            duration="8 weeks"
+            level="Intermediate"
+          />
+        ))}
+      </div>
+
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Create New Course">
+        <form className="modal-form">
+          <div className="form-group">
+            <label>Course Title</label>
+            <input type="text" placeholder="Enter course title" />
+          </div>
+          <div className="form-group">
+            <label>Category</label>
+            <select>
+              <option>Select category</option>
+              <option>Programming</option>
+              <option>Design</option>
+              <option>Business</option>
+            </select>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Duration</label>
+              <input type="text" placeholder="e.g. 8 weeks" />
+            </div>
+            <div className="form-group">
+              <label>Level</label>
+              <select>
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Description</label>
+            <textarea rows="4" placeholder="Course description..."></textarea>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="submit" className="btn-primary">Create Course</button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+const MentorManagement = () => {
+  const [showModal, setShowModal] = useState(false);
+  
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Mentor Management</h1>
+          <p className="page-subtitle">Manage mentor accounts and assignments</p>
+        </div>
+        <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Mentor</button>
+      </div>
+
+      <SearchFilter filters={[{ label: 'Department', options: ['All', 'Programming', 'Design', 'Business'] }]} />
+
+      <div className="dashboard-card">
+        <DataTable 
+          columns={['Name', 'Email', 'Courses', 'Students', 'Rating', 'Status']}
+          data={[
+            ['John Doe', 'john@example.com', '5', '250', '⭐ 4.8', <span className="badge badge-success">Active</span>],
+            ['Jane Smith', 'jane@example.com', '3', '180', '⭐ 4.9', <span className="badge badge-success">Active</span>],
+            ['Mike Johnson', 'mike@example.com', '4', '220', '⭐ 4.7', <span className="badge badge-success">Active</span>],
+            ['Sarah Williams', 'sarah@example.com', '2', '95', '⭐ 4.6', <span className="badge badge-warning">On Leave</span>]
+          ]}
+          actions={[
+            { icon: '👁️', label: 'View' },
+            { icon: '✏️', label: 'Edit' },
+            { icon: '🗑️', label: 'Delete', variant: 'danger' }
+          ]}
+        />
+      </div>
+
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add New Mentor">
+        <form className="modal-form">
+          <div className="form-group">
+            <label>Full Name</label>
+            <input type="text" placeholder="Enter full name" />
+          </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" placeholder="Enter email address" />
+          </div>
+          <div className="form-group">
+            <label>Department</label>
+            <select>
+              <option>Select department</option>
+              <option>Programming</option>
+              <option>Design</option>
+              <option>Business</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Specialization</label>
+            <input type="text" placeholder="e.g. React, Node.js" />
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="submit" className="btn-primary">Add Mentor</button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+const StudentManagement = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Student Management</h1>
+          <p className="page-subtitle">Manage student accounts and enrollments</p>
+        </div>
+        <button className="btn-primary">+ Add Student</button>
+      </div>
+
+      <SearchFilter 
+        filters={[
+          { label: 'Status', options: ['All', 'Active', 'Inactive', 'Suspended'] },
+          { label: 'Course', options: ['All Courses', 'React', 'Python', 'Design'] }
+        ]}
+      />
+
+      <div className="dashboard-card">
+        <DataTable 
+          columns={['Student ID', 'Name', 'Email', 'Enrolled Courses', 'Progress', 'Join Date', 'Status']}
+          data={[
+            ['STU001', 'Alice Brown', 'alice@example.com', '3', <div className="mini-progress"><div style={{width: '75%'}}></div></div>, '2024-01-10', <span className="badge badge-success">Active</span>],
+            ['STU002', 'Bob Wilson', 'bob@example.com', '5', <div className="mini-progress"><div style={{width: '60%'}}></div></div>, '2024-01-08', <span className="badge badge-success">Active</span>],
+            ['STU003', 'Carol Davis', 'carol@example.com', '2', <div className="mini-progress"><div style={{width: '40%'}}></div></div>, '2024-01-15', <span className="badge badge-success">Active</span>],
+            ['STU004', 'David Miller', 'david@example.com', '4', <div className="mini-progress"><div style={{width: '85%'}}></div></div>, '2024-01-05', <span className="badge badge-success">Active</span>]
+          ]}
+          actions={[
+            { icon: '👁️', label: 'View Profile' },
+            { icon: '📊', label: 'Progress' },
+            { icon: '✏️', label: 'Edit' }
+          ]}
+        />
+      </div>
+    </div>
+  );
+};
+
+const ReportsOverview = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Reports Overview</h1>
+          <p className="page-subtitle">View system-wide reports and analytics</p>
+        </div>
+        <button className="btn-primary">📥 Export Report</button>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard icon="📈" label="Course Completion Rate" value="78%" trend="↑ 5% vs last month" color="green" />
+        <StatCard icon="⏱️" label="Avg. Study Time" value="12.5 hrs" trend="↑ 2.3 hrs" color="blue" />
+        <StatCard icon="🎓" label="Certificates Issued" value="324" trend="↑ 45 this week" color="purple" />
+        <StatCard icon="💵" label="Monthly Revenue" value="$52,340" trend="↑ 18% growth" color="orange" />
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Enrollment Trends</h3>
+            <select className="filter-select-sm">
+              <option>Last 6 months</option>
+            </select>
+          </div>
+          <div className="chart-placeholder">
+            <div className="line-chart">
+              <div className="chart-line"></div>
+              <div className="chart-grid"></div>
+              <p className="chart-note">📊 Line chart visualization placeholder</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Top Performing Courses</h3>
+          </div>
+          <div className="ranking-list">
+            {['React Masterclass', 'Python for Beginners', 'UI/UX Design', 'Data Science 101', 'Node.js Advanced'].map((course, i) => (
+              <div key={i} className="ranking-item">
+                <span className="rank-number">#{i+1}</span>
+                <div className="rank-content">
+                  <p className="rank-title">{course}</p>
+                  <div className="mini-progress"><div style={{width: `${90-i*10}%`}}></div></div>
+                </div>
+                <span className="rank-value">{450-i*50} students</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CourseApproval = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">Course Approval</h1>
+        <p className="page-subtitle">Review and approve course submissions</p>
+      </div>
+
+      <div className="tabs-container">
+        <div className="tabs">
+          <button className="tab active">Pending <span className="tab-count">12</span></button>
+          <button className="tab">Approved <span className="tab-count">87</span></button>
+          <button className="tab">Rejected <span className="tab-count">5</span></button>
+        </div>
+      </div>
+
+      <div className="approval-list">
+        {[1,2,3].map(i => (
+          <div key={i} className="approval-card">
+            <div className="approval-header">
+              <div>
+                <h3>Course Title {i}</h3>
+                <p className="text-muted">Submitted by Mentor Name • 2 days ago</p>
+              </div>
+              <span className="badge badge-warning">Pending Review</span>
+            </div>
+            <div className="approval-body">
+              <div className="approval-details">
+                <div className="detail-item">
+                  <span className="detail-label">Category:</span>
+                  <span>Programming</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Duration:</span>
+                  <span>8 weeks</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Level:</span>
+                  <span>Intermediate</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Modules:</span>
+                  <span>12</span>
+                </div>
+              </div>
+              <p className="approval-description">
+                This course covers advanced concepts in modern web development...
+              </p>
+            </div>
+            <div className="approval-actions">
+              <button className="btn-secondary">📄 View Details</button>
+              <button className="btn-danger">✕ Reject</button>
+              <button className="btn-success">✓ Approve</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const BatchDownloads = () => {
+  const [selected, setSelected] = useState([]);
+  
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Batch Video Downloads</h1>
+          <p className="page-subtitle">Download course videos in batches</p>
+        </div>
+        <button className="btn-primary" disabled={selected.length === 0}>
+          📥 Download Selected ({selected.length})
+        </button>
+      </div>
+
+      <SearchFilter filters={[{ label: 'Course', options: ['All Courses', 'React', 'Python'] }]} />
+
+      <div className="dashboard-card">
+        <div className="file-list">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="file-item">
+              <input type="checkbox" onChange={(e) => {
+                if (e.target.checked) setSelected([...selected, i]);
+                else setSelected(selected.filter(x => x !== i));
+              }} />
+              <div className="file-icon">🎥</div>
+              <div className="file-info">
+                <p className="file-name">Module {i} - Introduction to React Hooks.mp4</p>
+                <p className="file-meta">Course: React Masterclass • 245 MB • Uploaded 2 days ago</p>
+              </div>
+              <button className="btn-icon">⬇️</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MockInterviews = () => {
+  const [showModal, setShowModal] = useState(false);
+  
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Mock Interview Appointments</h1>
+          <p className="page-subtitle">Schedule and manage mock interviews</p>
+        </div>
+        <button className="btn-primary" onClick={() => setShowModal(true)}>+ Schedule Interview</button>
+      </div>
+
+      <div className="calendar-view">
+        <div className="calendar-header">
+          <button className="btn-icon">←</button>
+          <h3>January 2024</h3>
+          <button className="btn-icon">→</button>
+        </div>
+        <div className="calendar-grid">
+          <div className="calendar-day-header">Sun</div>
+          <div className="calendar-day-header">Mon</div>
+          <div className="calendar-day-header">Tue</div>
+          <div className="calendar-day-header">Wed</div>
+          <div className="calendar-day-header">Thu</div>
+          <div className="calendar-day-header">Fri</div>
+          <div className="calendar-day-header">Sat</div>
+          
+          {[...Array(35)].map((_, i) => (
+            <div key={i} className={`calendar-day ${i % 7 === 0 || i % 7 === 6 ? 'weekend' : ''}`}>
+              <span className="day-number">{i < 31 ? i+1 : ''}</span>
+              {[10, 15, 20, 22].includes(i) && (
+                <div className="interview-dot" title="2 interviews scheduled"></div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <h3>Upcoming Interviews</h3>
+        <DataTable 
+          columns={['Student', 'Interviewer', 'Date & Time', 'Type', 'Status']}
+          data={[
+            ['John Doe', 'Sarah Wilson', 'Jan 15, 2024 - 10:00 AM', 'Technical', <span className="badge badge-success">Confirmed</span>],
+            ['Jane Smith', 'Mike Johnson', 'Jan 16, 2024 - 2:00 PM', 'HR Round', <span className="badge badge-warning">Pending</span>],
+            ['Bob Brown', 'Sarah Wilson', 'Jan 18, 2024 - 11:00 AM', 'Technical', <span className="badge badge-success">Confirmed</span>]
+          ]}
+          actions={[
+            { icon: '✏️', label: 'Reschedule' },
+            { icon: '✕', label: 'Cancel', variant: 'danger' }
+          ]}
+        />
+      </div>
+
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Schedule Mock Interview">
+        <form className="modal-form">
+          <div className="form-group">
+            <label>Student</label>
+            <select><option>Select student</option></select>
+          </div>
+          <div className="form-group">
+            <label>Interviewer</label>
+            <select><option>Select interviewer</option></select>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Date</label>
+              <input type="date" />
+            </div>
+            <div className="form-group">
+              <label>Time</label>
+              <input type="time" />
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Interview Type</label>
+            <select>
+              <option>Technical</option>
+              <option>HR Round</option>
+              <option>Behavioral</option>
+            </select>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="submit" className="btn-primary">Schedule</button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+const AssignmentsGrading = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">Assignments Grading</h1>
+        <p className="page-subtitle">Review and grade student assignments</p>
+      </div>
+
+      <div className="tabs-container">
+        <div className="tabs">
+          <button className="tab active">Pending <span className="tab-count">24</span></button>
+          <button className="tab">Graded <span className="tab-count">156</span></button>
+          <button className="tab">Resubmitted <span className="tab-count">8</span></button>
+        </div>
+      </div>
+
+      <SearchFilter filters={[
+        { label: 'Course', options: ['All', 'React', 'Python'] },
+        { label: 'Priority', options: ['All', 'Urgent', 'Normal'] }
+      ]} />
+
+      <div className="assignment-list">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="assignment-card">
+            <div className="assignment-header">
+              <div>
+                <h3>Assignment Title {i}</h3>
+                <p className="text-muted">Course: React Masterclass • Submitted by: Student Name</p>
+              </div>
+              <span className="badge badge-warning">Pending</span>
+            </div>
+            <div className="assignment-body">
+              <div className="assignment-meta">
+                <span>📅 Submitted: Jan 14, 2024</span>
+                <span>⏰ Due: Jan 15, 2024</span>
+                <span>📎 3 files attached</span>
+              </div>
+              <div className="assignment-files">
+                <div className="file-chip">📄 assignment.pdf</div>
+                <div className="file-chip">💻 code.zip</div>
+                <div className="file-chip">📊 presentation.pptx</div>
+              </div>
+            </div>
+            <div className="assignment-actions">
+              <button className="btn-secondary">👁️ Review</button>
+              <button className="btn-primary">📝 Grade</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const FeeAlerts = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Fee Reminder Alerts</h1>
+          <p className="page-subtitle">Manage fee payment reminders</p>
+        </div>
+        <button className="btn-primary">📧 Send Bulk Reminder</button>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard icon="💵" label="Total Pending" value="$12,450" trend="15 students" color="orange" />
+        <StatCard icon="✅" label="Paid This Month" value="$38,900" trend="102 students" color="green" />
+        <StatCard icon="⚠️" label="Overdue" value="$3,200" trend="5 students" color="red" />
+        <StatCard icon="📊" label="Collection Rate" value="94%" trend="↑ 3%" color="blue" />
+      </div>
+
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h3>Payment Status</h3>
+          <div className="tabs-inline">
+            <button className="tab-inline active">All</button>
+            <button className="tab-inline">Pending</button>
+            <button className="tab-inline">Overdue</button>
+            <button className="tab-inline">Paid</button>
+          </div>
+        </div>
+        <DataTable 
+          columns={['Student', 'Course', 'Amount', 'Due Date', 'Status', 'Last Reminder']}
+          data={[
+            ['Alice Johnson', 'React Masterclass', '$499', 'Jan 20, 2024', <span className="badge badge-warning">Pending</span>, 'Jan 10'],
+            ['Bob Smith', 'Python Course', '$399', 'Jan 18, 2024', <span className="badge badge-danger">Overdue</span>, 'Jan 15'],
+            ['Carol White', 'UI/UX Design', '$599', 'Jan 25, 2024', <span className="badge badge-success">Paid</span>, '-'],
+            ['David Brown', 'Data Science', '$799', 'Jan 22, 2024', <span className="badge badge-warning">Pending</span>, 'Jan 12']
+          ]}
+          actions={[
+            { icon: '📧', label: 'Send Reminder' },
+            { icon: '💳', label: 'Payment Details' },
+            { icon: '👁️', label: 'View' }
+          ]}
+        />
+      </div>
+    </div>
+  );
+};
+
+const SecurityProctoring = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">Security & Proctoring Setup</h1>
+        <p className="page-subtitle">Configure security and proctoring settings</p>
+      </div>
+
+      <div className="settings-grid">
+        <div className="dashboard-card">
+          <h3>Exam Proctoring Settings</h3>
+          <div className="settings-list">
+            <div className="setting-item">
+              <div>
+                <p className="setting-title">Enable Camera Monitoring</p>
+                <p className="setting-desc">Require students to enable camera during exams</p>
+              </div>
+              <label className="toggle">
+                <input type="checkbox" defaultChecked />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+            <div className="setting-item">
+              <div>
+                <p className="setting-title">Screen Recording</p>
+                <p className="setting-desc">Record student screens during assessments</p>
+              </div>
+              <label className="toggle">
+                <input type="checkbox" defaultChecked />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+            <div className="setting-item">
+              <div>
+                <p className="setting-title">Browser Lockdown</p>
+                <p className="setting-desc">Prevent tab switching during exams</p>
+              </div>
+              <label className="toggle">
+                <input type="checkbox" />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+            <div className="setting-item">
+              <div>
+                <p className="setting-title">AI Behavior Analysis</p>
+                <p className="setting-desc">Detect suspicious behavior patterns</p>
+              </div>
+              <label className="toggle">
+                <input type="checkbox" defaultChecked />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-card">
+          <h3>Access Control</h3>
+          <div className="settings-list">
+            <div className="setting-item">
+              <div>
+                <p className="setting-title">Two-Factor Authentication</p>
+                <p className="setting-desc">Require 2FA for all admin accounts</p>
+              </div>
+              <label className="toggle">
+                <input type="checkbox" defaultChecked />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+            <div className="setting-item">
+              <div>
+                <p className="setting-title">IP Whitelisting</p>
+                <p className="setting-desc">Restrict access to specific IP ranges</p>
+              </div>
+              <label className="toggle">
+                <input type="checkbox" />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+            <div className="setting-item">
+              <div>
+                <p className="setting-title">Session Timeout</p>
+                <p className="setting-desc">Auto-logout after inactivity</p>
+              </div>
+              <select className="setting-select">
+                <option>15 minutes</option>
+                <option>30 minutes</option>
+                <option>1 hour</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <h3>Recent Security Events</h3>
+        <DataTable 
+          columns={['Event', 'User', 'IP Address', 'Time', 'Status']}
+          data={[
+            ['Failed Login Attempt', 'admin@lms.com', '192.168.1.100', '2 mins ago', <span className="badge badge-danger">Blocked</span>],
+            ['Suspicious Activity Detected', 'student@lms.com', '192.168.1.105', '1 hour ago', <span className="badge badge-warning">Flagged</span>],
+            ['Password Changed', 'mentor@lms.com', '192.168.1.102', '3 hours ago', <span className="badge badge-success">Success</span>]
+          ]}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Continue with Student Pages in next file due to length...
+// STUDENT PAGES (DETAILED - SPECIAL ATTENTION)
+
+const StudentDashboard = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">Welcome back, Student! 👋</h1>
+        <p className="page-subtitle">Your learning journey at a glance</p>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard icon="📚" label="Enrolled Courses" value="4" trend="1 in progress" color="blue" />
+        <StatCard icon="✅" label="Completed Tasks" value="23" trend="↑ 5 this week" color="green" />
+        <StatCard icon="🎯" label="Overall Progress" value="68%" trend="↑ 12% this month" color="purple" />
+        <StatCard icon="🏆" label="Certificates Earned" value="2" trend="Keep learning!" color="orange" />
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="dashboard-card card-span-2">
+          <div className="card-header">
+            <h3>Continue Learning</h3>
+            <a href="#" className="btn-text">View All</a>
+          </div>
+          <div className="courses-grid-compact">
+            {[
+              { title: 'React Masterclass', progress: 75, image: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+              { title: 'Python for Data Science', progress: 45, image: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+              { title: 'UI/UX Design Fundamentals', progress: 60, image: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }
+            ].map((course, i) => (
+              <CourseCard key={i} {...course} instructor="Instructor Name" />
+            ))}
+          </div>
+        </div>
+
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Upcoming Deadlines</h3>
+          </div>
+          <div className="deadline-list">
+            {[
+              { task: 'React Assignment #5', course: 'React Masterclass', due: '2 days', urgent: true },
+              { task: 'Python Quiz', course: 'Python Course', due: '4 days', urgent: false },
+              { task: 'Design Project', course: 'UI/UX Design', due: '1 week', urgent: false }
+            ].map((item, i) => (
+              <div key={i} className={`deadline-item ${item.urgent ? 'urgent' : ''}`}>
+                <div className="deadline-icon">{item.urgent ? '⚠️' : '📝'}</div>
+                <div className="deadline-content">
+                  <p className="deadline-title">{item.task}</p>
+                  <p className="deadline-course">{item.course}</p>
+                </div>
+                <span className="deadline-time">Due in {item.due}</span>
+              </div>
+            ))}
+          </div>
+          <button className="btn-link">View All Tasks →</button>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h3>Your Progress Overview</h3>
+          <select className="filter-select-sm">
+            <option>This Month</option>
+            <option>Last 3 Months</option>
+          </select>
+        </div>
+        <div className="progress-overview">
+          {[
+            { course: 'React Masterclass', completed: 15, total: 20, progress: 75 },
+            { course: 'Python for Data Science', completed: 9, total: 20, progress: 45 },
+            { course: 'UI/UX Design', completed: 12, total: 20, progress: 60 },
+            { course: 'Data Structures', completed: 5, total: 20, progress: 25 }
+          ].map((item, i) => (
+            <div key={i} className="progress-item">
+              <div className="progress-header">
+                <span className="progress-course">{item.course}</span>
+                <span className="progress-stats">{item.completed}/{item.total} modules</span>
+              </div>
+              <div className="progress-bar-large">
+                <div className="progress-fill" style={{ width: `${item.progress}%` }}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CoursesList = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Browse Courses</h1>
+          <p className="page-subtitle">Discover and enroll in new courses</p>
+        </div>
+      </div>
+
+      <SearchFilter 
+        filters={[
+          { label: 'Category', options: ['All', 'Programming', 'Design', 'Business', 'Data Science'] },
+          { label: 'Level', options: ['All', 'Beginner', 'Intermediate', 'Advanced'] },
+          { label: 'Duration', options: ['All', 'Short (< 4 weeks)', 'Medium (4-8 weeks)', 'Long (> 8 weeks)'] }
+        ]}
+      />
+
+      <div className="category-tabs">
+        {['All Courses', 'Programming', 'Design', 'Business', 'Data Science', 'Marketing'].map((cat, i) => (
+          <button key={i} className={`category-tab ${i === 0 ? 'active' : ''}`}>{cat}</button>
+        ))}
+      </div>
+
+      <div className="courses-grid">
+        {[
+          { title: 'Complete React Developer Course', instructor: 'Sarah Johnson', students: 450, image: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', category: 'Programming', duration: '12 weeks', level: 'Intermediate' },
+          { title: 'Python for Data Science', instructor: 'Mike Chen', students: 380, image: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', category: 'Data Science', duration: '10 weeks', level: 'Beginner' },
+          { title: 'UI/UX Design Fundamentals', instructor: 'Emily Davis', students: 520, image: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', category: 'Design', duration: '8 weeks', level: 'Beginner' },
+          { title: 'Advanced JavaScript Patterns', instructor: 'John Smith', students: 290, image: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', category: 'Programming', duration: '6 weeks', level: 'Advanced' },
+          { title: 'Machine Learning A-Z', instructor: 'Dr. Alan Roberts', students: 610, image: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)', category: 'Data Science', duration: '14 weeks', level: 'Advanced' },
+          { title: 'Figma for Beginners', instructor: 'Lisa Wong', students: 340, image: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', category: 'Design', duration: '4 weeks', level: 'Beginner' }
+        ].map((course, i) => (
+          <div key={i} className="course-card course-card-hover">
+            <CourseCard {...course} />
+            <div className="course-footer">
+              <button className="btn-primary btn-block">Enroll Now</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="pagination">
+        <button className="btn-secondary">← Previous</button>
+        <div className="pagination-numbers">
+          <button className="page-btn active">1</button>
+          <button className="page-btn">2</button>
+          <button className="page-btn">3</button>
+          <button className="page-btn">4</button>
+        </div>
+        <button className="btn-secondary">Next →</button>
+      </div>
+    </div>
+  );
+};
+
+const RegisteredCourses = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">My Enrolled Courses</h1>
+        <p className="page-subtitle">Continue your learning journey</p>
+      </div>
+
+      <div className="view-toggle">
+        <button className="view-btn active">⊞ Grid</button>
+        <button className="view-btn">☰ List</button>
+      </div>
+
+      <div className="courses-grid">
+        {[
+          { title: 'React Masterclass', instructor: 'Sarah Johnson', progress: 75, image: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', nextLesson: 'Module 15: Advanced Hooks', timeSpent: '32 hours' },
+          { title: 'Python for Data Science', instructor: 'Mike Chen', progress: 45, image: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', nextLesson: 'Module 9: Pandas Library', timeSpent: '18 hours' },
+          { title: 'UI/UX Design Fundamentals', instructor: 'Emily Davis', progress: 60, image: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', nextLesson: 'Module 12: Prototyping', timeSpent: '24 hours' },
+          { title: 'Data Structures & Algorithms', instructor: 'John Smith', progress: 25, image: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', nextLesson: 'Module 5: Binary Trees', timeSpent: '12 hours' }
+        ].map((course, i) => (
+          <div key={i} className="enrolled-course-card">
+            <div className="course-image" style={{ background: course.image }}>
+              <div className="course-progress-overlay">
+                <div className="circular-progress">
+                  <span className="progress-percent">{course.progress}%</span>
+                </div>
+              </div>
+            </div>
+            <div className="course-body">
+              <h3 className="course-title">{course.title}</h3>
+              <p className="course-instructor">👨‍🏫 {course.instructor}</p>
+              <div className="course-stats">
+                <span className="stat-chip">⏱️ {course.timeSpent}</span>
+                <span className="stat-chip">🎯 {course.progress}% complete</span>
+              </div>
+              <div className="next-lesson">
+                <p className="next-lesson-label">Next Lesson:</p>
+                <p className="next-lesson-title">{course.nextLesson}</p>
+              </div>
+              <button className="btn-primary btn-block">Continue Learning →</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="dashboard-card">
+        <h3>Learning Statistics</h3>
+        <div className="stats-grid">
+          <div className="stat-box">
+            <div className="stat-icon-large">📊</div>
+            <h4>Total Study Time</h4>
+            <p className="stat-large">86 hours</p>
+            <p className="stat-subtext">This month: 24 hours</p>
+          </div>
+          <div className="stat-box">
+            <div className="stat-icon-large">✅</div>
+            <h4>Completed Modules</h4>
+            <p className="stat-large">41</p>
+            <p className="stat-subtext">9 this week</p>
+          </div>
+          <div className="stat-box">
+            <div className="stat-icon-large">🔥</div>
+            <h4>Learning Streak</h4>
+            <p className="stat-large">12 days</p>
+            <p className="stat-subtext">Keep it up!</p>
+          </div>
+          <div className="stat-box">
+            <div className="stat-icon-large">🎯</div>
+            <h4>Avg. Score</h4>
+            <p className="stat-large">87%</p>
+            <p className="stat-subtext">Excellent performance</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TaskSubmission = () => {
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">Task Submission</h1>
+        <p className="page-subtitle">Submit assignments and track your submissions</p>
+      </div>
+
+      <div className="tabs-container">
+        <div className="tabs">
+          <button className="tab active">Pending <span className="tab-count">3</span></button>
+          <button className="tab">Submitted <span className="tab-count">15</span></button>
+          <button className="tab">Graded <span className="tab-count">12</span></button>
+        </div>
+      </div>
+
+      <div className="task-list">
+        {[
+          { title: 'React Hooks Assignment', course: 'React Masterclass', due: '2 days', points: 100, urgent: true },
+          { title: 'Python Project Submission', course: 'Python for Data Science', due: '5 days', points: 150, urgent: false },
+          { title: 'Design Wireframes', course: 'UI/UX Design', due: '1 week', points: 80, urgent: false }
+        ].map((task, i) => (
+          <div key={i} className={`task-card ${task.urgent ? 'task-urgent' : ''}`}>
+            <div className="task-header">
+              <div>
+                <h3>{task.title}</h3>
+                <p className="text-muted">{task.course} • {task.points} points</p>
+              </div>
+              <div className="task-meta">
+                {task.urgent && <span className="badge badge-danger">Urgent</span>}
+                <span className="due-badge">Due in {task.due}</span>
+              </div>
+            </div>
+            <div className="task-body">
+              <p className="task-description">
+                Complete the assignment following the guidelines provided in the course materials. 
+                Make sure to include all required files and documentation.
+              </p>
+              <div className="task-requirements">
+                <h4>Requirements:</h4>
+                <ul>
+                  <li>✓ Source code files</li>
+                  <li>✓ Documentation (README.md)</li>
+                  <li>✓ Screenshots or demo video</li>
+                </ul>
+              </div>
+            </div>
+            <div className="task-actions">
+              <button className="btn-secondary">📄 View Instructions</button>
+              <button className="btn-primary">📤 Submit Assignment</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="dashboard-card">
+        <h3>Submit New Assignment</h3>
+        <form className="submission-form">
+          <div className="form-group">
+            <label>Select Assignment</label>
+            <select>
+              <option>React Hooks Assignment</option>
+              <option>Python Project Submission</option>
+              <option>Design Wireframes</option>
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label>Assignment Notes</label>
+            <textarea rows="4" placeholder="Add any notes or comments for your instructor..."></textarea>
+          </div>
+
+          <div className="form-group">
+            <label>Upload Files</label>
+            <div className="file-upload-area">
+              <div className="file-upload-icon">📎</div>
+              <p>Drag and drop files here or click to browse</p>
+              <input type="file" multiple hidden />
+              <button type="button" className="btn-secondary">Choose Files</button>
+            </div>
+            {selectedFiles.length > 0 && (
+              <div className="uploaded-files">
+                {selectedFiles.map((file, i) => (
+                  <div key={i} className="file-chip">
+                    📄 {file.name}
+                    <button className="file-remove">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button type="submit" className="btn-primary">Submit Assignment</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const AttendanceView = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">My Attendance</h1>
+        <p className="page-subtitle">Track your attendance records</p>
+      </div>
+
+      <div className="stats-grid">
+        <StatCard icon="✅" label="Total Classes" value="48" trend="This semester" color="blue" />
+        <StatCard icon="👍" label="Attended" value="42" trend="87.5%" color="green" />
+        <StatCard icon="❌" label="Missed" value="6" trend="12.5%" color="red" />
+        <StatCard icon="📊" label="Attendance Rate" value="87.5%" trend="Good standing" color="purple" />
+      </div>
+
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h3>Attendance Calendar</h3>
+          <div className="month-selector">
+            <button className="btn-icon">←</button>
+            <span>January 2024</span>
+            <button className="btn-icon">→</button>
+          </div>
+        </div>
+        <div className="attendance-calendar">
+          <div className="calendar-legend">
+            <span className="legend-item"><span className="legend-dot present"></span> Present</span>
+            <span className="legend-item"><span className="legend-dot absent"></span> Absent</span>
+            <span className="legend-item"><span className="legend-dot holiday"></span> Holiday</span>
+          </div>
+          <div className="calendar-grid">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+              <div key={i} className="calendar-day-header">{day}</div>
+            ))}
+            {[...Array(31)].map((_, i) => {
+              const status = i % 7 === 0 ? 'holiday' : i % 8 === 0 ? 'absent' : 'present';
+              return (
+                <div key={i} className={`calendar-day attendance-${status}`}>
+                  <span className="day-number">{i+1}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h3>Course-wise Attendance</h3>
+        </div>
+        <div className="course-attendance-list">
+          {[
+            { course: 'React Masterclass', attended: 15, total: 16, percentage: 94 },
+            { course: 'Python for Data Science', attended: 12, total: 14, percentage: 86 },
+            { course: 'UI/UX Design', attended: 10, total: 12, percentage: 83 },
+            { course: 'Data Structures', attended: 5, total: 6, percentage: 83 }
+          ].map((item, i) => (
+            <div key={i} className="course-attendance-item">
+              <div className="course-attendance-header">
+                <h4>{item.course}</h4>
+                <span className={`attendance-percentage ${item.percentage >= 90 ? 'excellent' : item.percentage >= 75 ? 'good' : 'warning'}`}>
+                  {item.percentage}%
+                </span>
+              </div>
+              <div className="attendance-stats">
+                <span>{item.attended} attended • {item.total - item.attended} missed • {item.total} total</span>
+              </div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${item.percentage}%` }}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Certificates = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="page-header">
+        <h1 className="page-title">My Certificates</h1>
+        <p className="page-subtitle">Your earned certificates and achievements</p>
+      </div>
+
+      <div className="certificates-grid">
+        {[
+          { title: 'React Masterclass', issueDate: 'December 2023', score: '95%', id: 'CERT-2023-001' },
+          { title: 'Python Basics', issueDate: 'November 2023', score: '88%', id: 'CERT-2023-002' }
+        ].map((cert, i) => (
+          <div key={i} className="certificate-card">
+            <div className="certificate-badge">
+              <div className="badge-ribbon">🏆</div>
+              <p className="certificate-title">{cert.title}</p>
+            </div>
+            <div className="certificate-details">
+              <div className="detail-row">
+                <span className="detail-label">Certificate ID:</span>
+                <span className="detail-value">{cert.id}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Issue Date:</span>
+                <span className="detail-value">{cert.issueDate}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Final Score:</span>
+                <span className="detail-value">{cert.score}</span>
+              </div>
+            </div>
+            <div className="certificate-actions">
+              <button className="btn-secondary">👁️ View</button>
+              <button className="btn-primary">⬇️ Download</button>
+              <button className="btn-secondary">🔗 Share</button>
+            </div>
+          </div>
+        ))}
+
+        <div className="certificate-card certificate-locked">
+          <div className="locked-content">
+            <div className="lock-icon">🔒</div>
+            <h3>UI/UX Design Course</h3>
+            <p>Complete the course to unlock this certificate</p>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: '60%' }}></div>
+            </div>
+            <span className="progress-text">60% Complete</span>
+          </div>
+        </div>
+
+        <div className="certificate-card certificate-locked">
+          <div className="locked-content">
+            <div className="lock-icon">🔒</div>
+            <h3>Data Structures</h3>
+            <p>Complete the course to unlock this certificate</p>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: '25%' }}></div>
+            </div>
+            <span className="progress-text">25% Complete</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-card">
+        <h3>Achievement Stats</h3>
+        <div className="achievement-stats">
+          <div className="achievement-item">
+            <div className="achievement-icon">🎯</div>
+            <div className="achievement-content">
+              <h4>2 Certificates Earned</h4>
+              <p>Keep learning to unlock more</p>
+            </div>
+          </div>
+          <div className="achievement-item">
+            <div className="achievement-icon">📈</div>
+            <div className="achievement-content">
+              <h4>Average Score: 91.5%</h4>
+              <p>Excellent performance!</p>
+            </div>
+          </div>
+          <div className="achievement-item">
+            <div className="achievement-icon">⭐</div>
+            <div className="achievement-content">
+              <h4>Skills Mastered: 12</h4>
+              <p>React, Python, Design and more</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Mentor Pages (Continued from Admin/Student)
+const MentorDashboard = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">Mentor Dashboard</h1>
+      <p className="page-subtitle">Your teaching overview and quick actions</p>
+    </div>
+    <div className="stats-grid">
+      <StatCard icon="📚" label="Active Courses" value="5" trend="2 new this month" color="blue" />
+      <StatCard icon="👥" label="Total Students" value="287" trend="↑ 45 this month" color="green" />
+      <StatCard icon="📝" label="Pending Tasks" value="12" trend="Needs review" color="orange" />
+      <StatCard icon="⭐" label="Avg. Rating" value="4.8" trend="Excellent!" color="purple" />
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Detailed mentor dashboard coming soon...</p>
     </div>
   </div>
 );
 
-// Admin Pages
-const AdminDashboard = () => <ComingSoon title="Admin Dashboard" description="Overview of system metrics and activities" />;
-const CoursesManagement = () => <ComingSoon title="Courses Management" description="Create and manage courses" />;
-const MentorManagement = () => <ComingSoon title="Mentor Management" description="Manage mentor accounts and assignments" />;
-const StudentManagement = () => <ComingSoon title="Student Management" description="Manage student accounts and enrollments" />;
-const ReportsOverview = () => <ComingSoon title="Reports Overview" description="View system-wide reports and analytics" />;
-const CourseApproval = () => <ComingSoon title="Course Approval" description="Review and approve course submissions" />;
-const BatchDownloads = () => <ComingSoon title="Batch Video Downloads" description="Download course videos in batches" />;
-const MockInterviews = () => <ComingSoon title="Mock Interview Appointments" description="Schedule and manage mock interviews" />;
-const AssignmentsGrading = () => <ComingSoon title="Assignments Grading" description="Review and grade student assignments" />;
-const FeeAlerts = () => <ComingSoon title="Fee Reminder Alerts" description="Manage fee payment reminders" />;
+const MentorCourses = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">My Courses</h1>
+      <p className="page-subtitle">View and edit your courses</p>
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Course management interface coming soon...</p>
+    </div>
+  </div>
+);
 
-// Mentor Pages
-const MentorDashboard = () => <ComingSoon title="Mentor Dashboard" description="Your teaching overview and quick actions" />;
-const MentorCourses = () => <ComingSoon title="Course List & Edit" description="View and edit your courses" />;
-const VideoSessions = () => <ComingSoon title="Video Sessions" description="Zoom/Teams integration for live classes" />;
-const TaskAssignment = () => <ComingSoon title="Task Assignment" description="Create and assign tasks to students" />;
-const AttendanceManagement = () => <ComingSoon title="Attendance Management" description="Track student attendance" />;
-const ProgressTracking = () => <ComingSoon title="Progress Tracking" description="Monitor student progress" />;
-const MaterialsUpload = () => <ComingSoon title="Materials Upload" description="Upload course materials and resources" />;
-const CertificateGeneration = () => <ComingSong title="Certificate Generation" description="Generate certificates for students" />;
+const VideoSessions = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">Video Sessions</h1>
+      <p className="page-subtitle">Zoom/Teams integration for live classes</p>
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Video session integration coming soon...</p>
+    </div>
+  </div>
+);
 
-// Student Pages
-const StudentDashboard = () => <ComingSoon title="Student Dashboard" description="Your learning journey at a glance" />;
-const CoursesList = () => <ComingSoon title="Courses List" description="Browse available courses" />;
-const RegisteredCourses = () => <ComingSoon title="Registered Courses" description="Your enrolled courses" />;
-const TaskSubmission = () => <ComingSoon title="Task Submission" description="Submit assignments and tasks" />;
-const AttendanceView = () => <ComingSoon title="Attendance View" description="View your attendance records" />;
-const Certificates = () => <ComingSoon title="Certificates" description="Your earned certificates" />;
+const TaskAssignment = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">Task Assignment</h1>
+      <p className="page-subtitle">Create and assign tasks to students</p>
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Task assignment interface coming soon...</p>
+    </div>
+  </div>
+);
 
-// Security Page
-const SecurityProctoring = () => <ComingSoon title="Security & Proctoring Setup" description="Configure security and proctoring settings" />;
+const AttendanceManagement = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">Attendance Management</h1>
+      <p className="page-subtitle">Track student attendance</p>
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Attendance management coming soon...</p>
+    </div>
+  </div>
+);
 
-// Admin Menu Items
+const ProgressTracking = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">Progress Tracking</h1>
+      <p className="page-subtitle">Monitor student progress</p>
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Progress tracking interface coming soon...</p>
+    </div>
+  </div>
+);
+
+const MaterialsUpload = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">Materials Upload</h1>
+      <p className="page-subtitle">Upload course materials and resources</p>
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Materials upload interface coming soon...</p>
+    </div>
+  </div>
+);
+
+const CertificateGeneration = () => (
+  <div className="page-wrapper">
+    <div className="page-header">
+      <h1 className="page-title">Certificate Generation</h1>
+      <p className="page-subtitle">Generate certificates for students</p>
+    </div>
+    <div className="coming-soon-banner">
+      <span className="placeholder-icon">🚧</span>
+      <p>Certificate generation coming soon...</p>
+    </div>
+  </div>
+);
+
+// Menu Items
 const adminMenuItems = [
   { path: '/admin', label: 'Dashboard', icon: '📊' },
   { path: '/admin/courses', label: 'Courses Management', icon: '📚' },
@@ -396,7 +1730,6 @@ const adminMenuItems = [
   { path: '/admin/security', label: 'Security & Proctoring', icon: '🔒' }
 ];
 
-// Mentor Menu Items
 const mentorMenuItems = [
   { path: '/mentor', label: 'Dashboard', icon: '📊' },
   { path: '/mentor/courses', label: 'Course List & Edit', icon: '📚' },
@@ -408,7 +1741,6 @@ const mentorMenuItems = [
   { path: '/mentor/certificates', label: 'Certificate Generation', icon: '🏆' }
 ];
 
-// Student Menu Items
 const studentMenuItems = [
   { path: '/student', label: 'Dashboard', icon: '📊' },
   { path: '/student/courses', label: 'Courses List', icon: '📚' },
@@ -423,11 +1755,9 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           
-          {/* Admin Routes */}
           <Route path="/admin/*" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <DashboardLayout menuItems={adminMenuItems} role="admin">
@@ -448,7 +1778,6 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* Mentor Routes */}
           <Route path="/mentor/*" element={
             <ProtectedRoute allowedRoles={['mentor']}>
               <DashboardLayout menuItems={mentorMenuItems} role="mentor">
@@ -466,7 +1795,6 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* Student Routes */}
           <Route path="/student/*" element={
             <ProtectedRoute allowedRoles={['student']}>
               <DashboardLayout menuItems={studentMenuItems} role="student">
@@ -482,7 +1810,6 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* Default Route */}
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>
       </AuthProvider>
