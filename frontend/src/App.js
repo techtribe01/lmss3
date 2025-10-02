@@ -315,88 +315,63 @@ const LoginPage = () => {
           Sign in to your LMS account
         </motion.p>
         
-        <form onSubmit={handleSubmit} className="auth-form">
-          <AnimatePresence>
-            {error && (
-              <motion.div 
-                className="error-message"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-              >
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
+          <FormValidationSummary errors={errors} />
           
           <motion.div 
-            className={`form-group ${focusedField === 'username' ? 'focused' : ''}`}
-            whileTap={{ scale: 0.99 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <label>Username or Email</label>
-            <input 
-              type="text" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-              onFocus={() => setFocusedField('username')}
-              onBlur={() => setFocusedField(null)}
-              required 
+            <Input
+              {...register('username')}
+              label="Username or Email"
               placeholder="Enter your username or email"
-              disabled={isLoading}
+              icon={User}
+              error={errors.username?.message}
+              disabled={isSubmitting}
+              required
             />
-            {username.length > 0 && username.length < 3 && (
-              <motion.span 
-                className="field-hint"
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                Username/email should be valid
-              </motion.span>
-            )}
           </motion.div>
 
           <motion.div 
-            className={`form-group ${focusedField === 'password' ? 'focused' : ''}`}
-            whileTap={{ scale: 0.99 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
           >
-            <label>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)}
-              onFocus={() => setFocusedField('password')}
-              onBlur={() => setFocusedField(null)}
-              required 
+            <PasswordInput
+              {...register('password')}
+              label="Password"
               placeholder="Enter your password"
-              disabled={isLoading}
+              error={errors.password?.message}
+              disabled={isSubmitting}
+              required
             />
-            {password.length > 0 && password.length < 6 && (
-              <motion.span 
-                className="field-hint"
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                Password should be at least 6 characters
-              </motion.span>
-            )}
           </motion.div>
 
-          <motion.button 
-            type="submit" 
-            className="auth-button"
-            disabled={!isFormValid || isLoading}
-            whileHover={isFormValid && !isLoading ? { scale: 1.02 } : {}}
-            whileTap={isFormValid && !isLoading ? { scale: 0.98 } : {}}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
           >
-            {isLoading ? 'Signing In...' : 'Sign In'}
-          </motion.button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              isLoading={isSubmitting}
+              disabled={!isValid}
+              className="w-full"
+            >
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </motion.div>
         </form>
 
         <motion.p 
           className="auth-footer"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.4 }}
         >
           Don't have an account? <Link to="/register">Sign up</Link>
         </motion.p>
