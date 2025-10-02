@@ -643,6 +643,731 @@ class LMSAPITester:
         
         return results
     
+    # ==================== ENROLLMENT MANAGEMENT TESTS ====================
+    
+    def test_enroll_student(self, role: str, course_id: str, should_succeed: bool = True) -> bool:
+        """Test student enrollment in a course"""
+        print(f"🔍 Testing Student Enrollment - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Enroll Student {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        enrollment_data = {"course_id": course_id}
+        success, response, error = self.make_request("POST", "/enrollments", enrollment_data, headers)
+        
+        if not success:
+            self.log_test(f"Enroll Student {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if "id" in data and data.get("course_id") == course_id:
+                    self.log_test(f"Enroll Student {role.title()}", True, f"Student enrolled successfully. Enrollment ID: {data['id']}")
+                    return True
+                else:
+                    self.log_test(f"Enroll Student {role.title()}", False, f"Invalid response data: {data}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Enroll Student {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Enroll Student {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code in [403, 400]:
+                self.log_test(f"Enroll Student {role.title()}", True, "Correctly rejected unauthorized enrollment")
+                return True
+            else:
+                self.log_test(f"Enroll Student {role.title()}", False, f"Expected 403/400, got {response.status_code}")
+                return False
+    
+    def test_get_user_enrollments(self, role: str, should_succeed: bool = True) -> bool:
+        """Test getting current user's enrollments"""
+        print(f"🔍 Testing Get User Enrollments - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Get User Enrollments {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("GET", "/enrollments", headers=headers)
+        
+        if not success:
+            self.log_test(f"Get User Enrollments {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test(f"Get User Enrollments {role.title()}", True, f"Retrieved {len(data)} enrollments")
+                    return True
+                else:
+                    self.log_test(f"Get User Enrollments {role.title()}", False, f"Expected list, got: {type(data)}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Get User Enrollments {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Get User Enrollments {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Get User Enrollments {role.title()}", True, "Correctly rejected unauthorized access")
+                return True
+            else:
+                self.log_test(f"Get User Enrollments {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_get_student_enrollments(self, role: str, student_id: str, should_succeed: bool = True) -> bool:
+        """Test getting enrollments for a specific student"""
+        print(f"🔍 Testing Get Student Enrollments - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Get Student Enrollments {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("GET", f"/enrollments/student/{student_id}", headers=headers)
+        
+        if not success:
+            self.log_test(f"Get Student Enrollments {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test(f"Get Student Enrollments {role.title()}", True, f"Retrieved {len(data)} student enrollments")
+                    return True
+                else:
+                    self.log_test(f"Get Student Enrollments {role.title()}", False, f"Expected list, got: {type(data)}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Get Student Enrollments {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Get Student Enrollments {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Get Student Enrollments {role.title()}", True, "Correctly rejected unauthorized access")
+                return True
+            else:
+                self.log_test(f"Get Student Enrollments {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_get_course_enrollments(self, role: str, course_id: str, should_succeed: bool = True) -> bool:
+        """Test getting enrollments for a specific course"""
+        print(f"🔍 Testing Get Course Enrollments - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Get Course Enrollments {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("GET", f"/enrollments/course/{course_id}", headers=headers)
+        
+        if not success:
+            self.log_test(f"Get Course Enrollments {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test(f"Get Course Enrollments {role.title()}", True, f"Retrieved {len(data)} course enrollments")
+                    return True
+                else:
+                    self.log_test(f"Get Course Enrollments {role.title()}", False, f"Expected list, got: {type(data)}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Get Course Enrollments {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Get Course Enrollments {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Get Course Enrollments {role.title()}", True, "Correctly rejected unauthorized access")
+                return True
+            else:
+                self.log_test(f"Get Course Enrollments {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_unenroll_student(self, role: str, course_id: str, student_id: str, should_succeed: bool = True) -> bool:
+        """Test unenrolling a student from a course"""
+        print(f"🔍 Testing Unenroll Student - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Unenroll Student {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("DELETE", f"/enrollments/{course_id}/student/{student_id}", headers=headers)
+        
+        if not success:
+            self.log_test(f"Unenroll Student {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                self.log_test(f"Unenroll Student {role.title()}", True, "Student unenrolled successfully")
+                return True
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Unenroll Student {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Unenroll Student {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Unenroll Student {role.title()}", True, "Correctly rejected unauthorized unenrollment")
+                return True
+            else:
+                self.log_test(f"Unenroll Student {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_update_enrollment_status(self, role: str, course_id: str, student_id: str, status: str, should_succeed: bool = True) -> bool:
+        """Test updating enrollment status"""
+        print(f"🔍 Testing Update Enrollment Status - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Update Enrollment Status {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        status_data = {"completion_status": status}
+        success, response, error = self.make_request("PUT", f"/enrollments/{course_id}/student/{student_id}/status", status_data, headers)
+        
+        if not success:
+            self.log_test(f"Update Enrollment Status {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("completion_status") == status:
+                    self.log_test(f"Update Enrollment Status {role.title()}", True, f"Status updated to: {status}")
+                    return True
+                else:
+                    self.log_test(f"Update Enrollment Status {role.title()}", False, f"Status not updated correctly")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Update Enrollment Status {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Update Enrollment Status {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Update Enrollment Status {role.title()}", True, "Correctly rejected unauthorized status update")
+                return True
+            else:
+                self.log_test(f"Update Enrollment Status {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+
+    # ==================== TASK/ASSIGNMENT MANAGEMENT TESTS ====================
+    
+    def test_create_task(self, role: str, task_data: Dict, should_succeed: bool = True) -> bool:
+        """Test creating a task/assignment"""
+        print(f"🔍 Testing Create Task - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Create Task {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("POST", "/tasks", task_data, headers)
+        
+        if not success:
+            self.log_test(f"Create Task {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if "id" in data and data.get("title") == task_data["title"]:
+                    # Store task for later tests
+                    task_key = f"{role}_task"
+                    if not hasattr(self, 'tasks'):
+                        self.tasks = {}
+                    self.tasks[task_key] = data
+                    self.log_test(f"Create Task {role.title()}", True, f"Task created successfully. ID: {data['id']}")
+                    return True
+                else:
+                    self.log_test(f"Create Task {role.title()}", False, f"Invalid response data: {data}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Create Task {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Create Task {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Create Task {role.title()}", True, "Correctly rejected unauthorized task creation")
+                return True
+            else:
+                self.log_test(f"Create Task {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_get_tasks(self, role: str, course_id: str = None, should_succeed: bool = True) -> bool:
+        """Test getting tasks (optionally filtered by course)"""
+        print(f"🔍 Testing Get Tasks - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Get Tasks {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        endpoint = "/tasks"
+        if course_id:
+            endpoint += f"?course_id={course_id}"
+        success, response, error = self.make_request("GET", endpoint, headers=headers)
+        
+        if not success:
+            self.log_test(f"Get Tasks {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test(f"Get Tasks {role.title()}", True, f"Retrieved {len(data)} tasks")
+                    return True
+                else:
+                    self.log_test(f"Get Tasks {role.title()}", False, f"Expected list, got: {type(data)}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Get Tasks {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Get Tasks {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Get Tasks {role.title()}", True, "Correctly rejected unauthorized access")
+                return True
+            else:
+                self.log_test(f"Get Tasks {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_get_single_task(self, role: str, task_id: str, should_succeed: bool = True) -> bool:
+        """Test getting a specific task"""
+        print(f"🔍 Testing Get Single Task - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Get Single Task {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("GET", f"/tasks/{task_id}", headers=headers)
+        
+        if not success:
+            self.log_test(f"Get Single Task {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("id") == task_id:
+                    self.log_test(f"Get Single Task {role.title()}", True, f"Retrieved task: {data.get('title')}")
+                    return True
+                else:
+                    self.log_test(f"Get Single Task {role.title()}", False, f"Task ID mismatch")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Get Single Task {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Get Single Task {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code in [403, 404]:
+                self.log_test(f"Get Single Task {role.title()}", True, "Correctly rejected unauthorized access")
+                return True
+            else:
+                self.log_test(f"Get Single Task {role.title()}", False, f"Expected 403/404, got {response.status_code}")
+                return False
+    
+    def test_update_task(self, role: str, task_id: str, update_data: Dict, should_succeed: bool = True) -> bool:
+        """Test updating a task"""
+        print(f"🔍 Testing Update Task - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Update Task {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("PUT", f"/tasks/{task_id}", update_data, headers)
+        
+        if not success:
+            self.log_test(f"Update Task {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("id") == task_id:
+                    self.log_test(f"Update Task {role.title()}", True, f"Task updated successfully")
+                    return True
+                else:
+                    self.log_test(f"Update Task {role.title()}", False, f"Task ID mismatch")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Update Task {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Update Task {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Update Task {role.title()}", True, "Correctly rejected unauthorized update")
+                return True
+            else:
+                self.log_test(f"Update Task {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_delete_task(self, role: str, task_id: str, should_succeed: bool = True) -> bool:
+        """Test deleting a task"""
+        print(f"🔍 Testing Delete Task - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Delete Task {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("DELETE", f"/tasks/{task_id}", headers=headers)
+        
+        if not success:
+            self.log_test(f"Delete Task {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                self.log_test(f"Delete Task {role.title()}", True, "Task deleted successfully")
+                return True
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Delete Task {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Delete Task {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Delete Task {role.title()}", True, "Correctly rejected unauthorized deletion")
+                return True
+            else:
+                self.log_test(f"Delete Task {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_submit_task(self, role: str, submission_data: Dict, should_succeed: bool = True) -> bool:
+        """Test submitting a task"""
+        print(f"🔍 Testing Submit Task - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Submit Task {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("POST", "/task-submissions", submission_data, headers)
+        
+        if not success:
+            self.log_test(f"Submit Task {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if "id" in data and data.get("task_id") == submission_data["task_id"]:
+                    # Store submission for later tests
+                    if not hasattr(self, 'submissions'):
+                        self.submissions = {}
+                    self.submissions[f"{role}_submission"] = data
+                    self.log_test(f"Submit Task {role.title()}", True, f"Task submitted successfully. Submission ID: {data['id']}")
+                    return True
+                else:
+                    self.log_test(f"Submit Task {role.title()}", False, f"Invalid response data: {data}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Submit Task {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Submit Task {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code in [403, 400]:
+                self.log_test(f"Submit Task {role.title()}", True, "Correctly rejected unauthorized submission")
+                return True
+            else:
+                self.log_test(f"Submit Task {role.title()}", False, f"Expected 403/400, got {response.status_code}")
+                return False
+    
+    def test_get_task_submissions(self, role: str, task_id: str = None, should_succeed: bool = True) -> bool:
+        """Test getting task submissions"""
+        print(f"🔍 Testing Get Task Submissions - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Get Task Submissions {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        endpoint = "/task-submissions"
+        if task_id:
+            endpoint += f"?task_id={task_id}"
+        success, response, error = self.make_request("GET", endpoint, headers=headers)
+        
+        if not success:
+            self.log_test(f"Get Task Submissions {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test(f"Get Task Submissions {role.title()}", True, f"Retrieved {len(data)} submissions")
+                    return True
+                else:
+                    self.log_test(f"Get Task Submissions {role.title()}", False, f"Expected list, got: {type(data)}")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Get Task Submissions {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Get Task Submissions {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Get Task Submissions {role.title()}", True, "Correctly rejected unauthorized access")
+                return True
+            else:
+                self.log_test(f"Get Task Submissions {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+    
+    def test_grade_submission(self, role: str, submission_id: str, grade_data: Dict, should_succeed: bool = True) -> bool:
+        """Test grading a task submission"""
+        print(f"🔍 Testing Grade Submission - {role.title()} User...")
+        
+        if role not in self.tokens:
+            self.log_test(f"Grade Submission {role.title()}", False, f"No {role} token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.tokens[role]}"}
+        success, response, error = self.make_request("PUT", f"/task-submissions/{submission_id}/grade", grade_data, headers)
+        
+        if not success:
+            self.log_test(f"Grade Submission {role.title()}", False, f"Request failed: {error}")
+            return False
+            
+        if should_succeed:
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("grade") == grade_data["grade"]:
+                    self.log_test(f"Grade Submission {role.title()}", True, f"Submission graded successfully. Grade: {data['grade']}")
+                    return True
+                else:
+                    self.log_test(f"Grade Submission {role.title()}", False, f"Grade not updated correctly")
+                    return False
+            else:
+                try:
+                    error_data = response.json()
+                    self.log_test(f"Grade Submission {role.title()}", False, f"Status {response.status_code}: {error_data.get('detail', 'Unknown error')}")
+                except:
+                    self.log_test(f"Grade Submission {role.title()}", False, f"Status {response.status_code}: {response.text}")
+                return False
+        else:
+            if response.status_code == 403:
+                self.log_test(f"Grade Submission {role.title()}", True, "Correctly rejected unauthorized grading")
+                return True
+            else:
+                self.log_test(f"Grade Submission {role.title()}", False, f"Expected 403, got {response.status_code}")
+                return False
+
+    def run_enrollment_tests(self):
+        """Run comprehensive enrollment management tests"""
+        print("\n" + "=" * 60)
+        print("📚 ENROLLMENT MANAGEMENT TESTING")
+        print("=" * 60)
+        
+        results = []
+        
+        # Ensure we have an approved course for enrollment testing
+        if "mentor_course" in self.courses:
+            course_id = self.courses["mentor_course"]["id"]
+            # Approve the course first
+            if "admin" in self.tokens:
+                headers = {"Authorization": f"Bearer {self.tokens['admin']}"}
+                approval_data = {"approval_status": "approved"}
+                self.make_request("PUT", f"/courses/{course_id}/approve", approval_data, headers)
+        
+        # Test 1: Student Enrollment
+        print("\n📝 Testing Student Enrollment...")
+        if "mentor_course" in self.courses:
+            course_id = self.courses["mentor_course"]["id"]
+            results.append(self.test_enroll_student("student", course_id, True))
+            results.append(self.test_enroll_student("mentor", course_id, False))  # Should fail
+            results.append(self.test_enroll_student("admin", course_id, True))  # Admin can enroll
+        
+        # Test 2: Get User Enrollments
+        print("\n📋 Testing Get User Enrollments...")
+        results.append(self.test_get_user_enrollments("student", True))
+        results.append(self.test_get_user_enrollments("mentor", False))  # Should fail
+        results.append(self.test_get_user_enrollments("admin", False))  # Should fail
+        
+        # Test 3: Get Student Enrollments (Admin/Mentor access)
+        print("\n👨‍🎓 Testing Get Student Enrollments...")
+        if "student" in self.users:
+            student_id = self.users["student"]["id"]
+            results.append(self.test_get_student_enrollments("admin", student_id, True))
+            results.append(self.test_get_student_enrollments("mentor", student_id, True))
+            results.append(self.test_get_student_enrollments("student", student_id, False))  # Should fail
+        
+        # Test 4: Get Course Enrollments
+        print("\n🎓 Testing Get Course Enrollments...")
+        if "mentor_course" in self.courses:
+            course_id = self.courses["mentor_course"]["id"]
+            results.append(self.test_get_course_enrollments("admin", course_id, True))
+            results.append(self.test_get_course_enrollments("mentor", course_id, True))
+            results.append(self.test_get_course_enrollments("student", course_id, False))  # Should fail
+        
+        # Test 5: Update Enrollment Status
+        print("\n✏️ Testing Update Enrollment Status...")
+        if "mentor_course" in self.courses and "student" in self.users:
+            course_id = self.courses["mentor_course"]["id"]
+            student_id = self.users["student"]["id"]
+            results.append(self.test_update_enrollment_status("admin", course_id, student_id, "completed", True))
+            results.append(self.test_update_enrollment_status("mentor", course_id, student_id, "in_progress", True))
+            results.append(self.test_update_enrollment_status("student", course_id, student_id, "completed", False))  # Should fail
+        
+        # Test 6: Unenroll Student
+        print("\n🚪 Testing Student Unenrollment...")
+        if "mentor_course" in self.courses and "student" in self.users:
+            course_id = self.courses["mentor_course"]["id"]
+            student_id = self.users["student"]["id"]
+            results.append(self.test_unenroll_student("student", course_id, student_id, True))  # Student can unenroll self
+            # Re-enroll for admin test
+            self.test_enroll_student("student", course_id, True)
+            results.append(self.test_unenroll_student("admin", course_id, student_id, True))  # Admin can unenroll
+        
+        return results
+
+    def run_task_management_tests(self):
+        """Run comprehensive task/assignment management tests"""
+        print("\n" + "=" * 60)
+        print("📋 TASK/ASSIGNMENT MANAGEMENT TESTING")
+        print("=" * 60)
+        
+        results = []
+        
+        # Test 1: Task Creation
+        print("\n📝 Testing Task Creation...")
+        if "mentor_course" in self.courses:
+            course_id = self.courses["mentor_course"]["id"]
+            task_data = {
+                "course_id": course_id,
+                "title": "Python Programming Assignment",
+                "description": "Complete the Python exercises and submit your code",
+                "due_date": "2025-02-15T23:59:59Z"
+            }
+            results.append(self.test_create_task("mentor", task_data, True))
+            results.append(self.test_create_task("admin", task_data, True))
+            results.append(self.test_create_task("student", task_data, False))  # Should fail
+        
+        # Test 2: Get Tasks
+        print("\n📋 Testing Get Tasks...")
+        results.append(self.test_get_tasks("admin", None, True))
+        results.append(self.test_get_tasks("mentor", None, True))
+        results.append(self.test_get_tasks("student", None, True))
+        
+        # Test with course filter
+        if "mentor_course" in self.courses:
+            course_id = self.courses["mentor_course"]["id"]
+            results.append(self.test_get_tasks("mentor", course_id, True))
+            results.append(self.test_get_tasks("student", course_id, True))  # If enrolled
+        
+        # Test 3: Get Single Task
+        print("\n🔍 Testing Get Single Task...")
+        if hasattr(self, 'tasks') and "mentor_task" in self.tasks:
+            task_id = self.tasks["mentor_task"]["id"]
+            results.append(self.test_get_single_task("admin", task_id, True))
+            results.append(self.test_get_single_task("mentor", task_id, True))
+            results.append(self.test_get_single_task("student", task_id, True))  # If enrolled in course
+        
+        # Test 4: Update Task
+        print("\n✏️ Testing Update Task...")
+        if hasattr(self, 'tasks') and "mentor_task" in self.tasks:
+            task_id = self.tasks["mentor_task"]["id"]
+            update_data = {
+                "title": "Updated Python Assignment",
+                "description": "Updated description with more details"
+            }
+            results.append(self.test_update_task("mentor", task_id, update_data, True))
+            results.append(self.test_update_task("admin", task_id, update_data, True))
+            results.append(self.test_update_task("student", task_id, update_data, False))  # Should fail
+        
+        # Test 5: Task Submission
+        print("\n📤 Testing Task Submission...")
+        if hasattr(self, 'tasks') and "mentor_task" in self.tasks:
+            task_id = self.tasks["mentor_task"]["id"]
+            submission_data = {
+                "task_id": task_id,
+                "content": "Here is my solution to the Python assignment. I have completed all the exercises and tested the code thoroughly.",
+                "file_url": "https://example.com/student_submission.py"
+            }
+            results.append(self.test_submit_task("student", submission_data, True))
+            results.append(self.test_submit_task("mentor", submission_data, False))  # Should fail
+            results.append(self.test_submit_task("admin", submission_data, False))  # Should fail
+        
+        # Test 6: Get Task Submissions
+        print("\n📥 Testing Get Task Submissions...")
+        results.append(self.test_get_task_submissions("student", None, True))  # Own submissions
+        results.append(self.test_get_task_submissions("mentor", None, True))  # Course submissions
+        results.append(self.test_get_task_submissions("admin", None, True))  # All submissions
+        
+        # Test with task filter
+        if hasattr(self, 'tasks') and "mentor_task" in self.tasks:
+            task_id = self.tasks["mentor_task"]["id"]
+            results.append(self.test_get_task_submissions("mentor", task_id, True))
+            results.append(self.test_get_task_submissions("admin", task_id, True))
+        
+        # Test 7: Grade Submission
+        print("\n📊 Testing Grade Submission...")
+        if hasattr(self, 'submissions') and "student_submission" in self.submissions:
+            submission_id = self.submissions["student_submission"]["id"]
+            grade_data = {
+                "grade": 85.5,
+                "feedback": "Good work! Your solution is correct and well-structured. Consider adding more comments for better readability."
+            }
+            results.append(self.test_grade_submission("mentor", submission_id, grade_data, True))
+            results.append(self.test_grade_submission("admin", submission_id, grade_data, True))
+            results.append(self.test_grade_submission("student", submission_id, grade_data, False))  # Should fail
+        
+        # Test 8: Delete Task
+        print("\n🗑️ Testing Delete Task...")
+        if hasattr(self, 'tasks') and "mentor_task" in self.tasks:
+            task_id = self.tasks["mentor_task"]["id"]
+            results.append(self.test_delete_task("student", task_id, False))  # Should fail
+            results.append(self.test_delete_task("mentor", task_id, True))  # Should succeed
+        
+        return results
+
     def run_all_tests(self):
         """Run complete test suite"""
         print("=" * 60)
@@ -691,6 +1416,14 @@ class LMSAPITester:
         course_results = self.run_course_management_tests()
         results.extend(course_results)
         
+        # Test 10: Enrollment Management Tests
+        enrollment_results = self.run_enrollment_tests()
+        results.extend(enrollment_results)
+        
+        # Test 11: Task/Assignment Management Tests
+        task_results = self.run_task_management_tests()
+        results.extend(task_results)
+        
         # Summary
         print("\n" + "=" * 60)
         print("📊 COMPREHENSIVE TEST SUMMARY")
@@ -704,6 +1437,8 @@ class LMSAPITester:
             print("\n🎉 All tests passed! Backend APIs are working correctly.")
             print("✅ Authentication system: WORKING")
             print("✅ Course management system: WORKING")
+            print("✅ Enrollment management system: WORKING")
+            print("✅ Task/assignment management system: WORKING")
             return True
         else:
             print(f"\n⚠️  {total - passed} test(s) failed. Please check the issues above.")
