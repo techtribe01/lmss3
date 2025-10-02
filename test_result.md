@@ -272,18 +272,18 @@ backend:
 
   - task: "Course Management - Get Mentor Courses"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented GET /api/courses/mentor/{mentor_id}. Admins can view any mentor's courses. Mentors can only view their own. Students denied access."
       - working: true
         agent: "testing"
-        comment: "✅ TESTED: Admin-only endpoint works correctly. Admin users can access all users list. Non-admin users (mentor, student) properly rejected with 403 Forbidden. Data fetched from Supabase database."
+        comment: "✅ TESTED: Mentor course access works perfectly. Admins can view any mentor's courses. Mentors can view their own courses but denied access to other mentors' courses (403). Students correctly denied access (403). Cross-mentor access control properly enforced."
 
 frontend:
   - task: "Login Page"
