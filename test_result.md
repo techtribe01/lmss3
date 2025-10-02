@@ -212,15 +212,18 @@ backend:
 
   - task: "Course Management - Get Single Course"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented GET /api/courses/{course_id} with access control. Students/mentors can only view approved courses or their own."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Single course access control works perfectly. Students can access approved courses but denied access to pending/rejected (403). Mentors can access their own courses (any status) but denied access to other mentors' pending courses. Admins can access any course. Comprehensive approval workflow tested."
 
   - task: "Course Management - Update Course"
     implemented: true
