@@ -216,8 +216,8 @@ const LoginPage = () => {
           {error && <div className="error-message">{error}</div>}
           
           <div className="form-group">
-            <label>Username</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required placeholder="Enter your username" />
+            <label>Username or Email</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required placeholder="Enter your username or email" />
           </div>
 
           <div className="form-group">
