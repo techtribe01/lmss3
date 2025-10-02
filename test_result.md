@@ -178,6 +178,93 @@ backend:
         comment: "Updated admin users endpoint to fetch from Supabase. Role-based access control maintained."
       - working: true
         agent: "testing"
+        comment: "✅ TESTED: Role-based access control working. Admin can view all users. Non-admin access properly denied with 403."
+
+  - task: "Course Management - Create Course"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented POST /api/courses endpoint. Admin and mentors can create courses. Auto-assigns mentor_id if mentor creates. Sets approval_status to 'pending' by default."
+
+  - task: "Course Management - List Courses"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented GET /api/courses endpoint with role-based filtering. Students see only approved courses. Mentors see approved + their own courses. Admins see all courses. Supports approval_status filter."
+
+  - task: "Course Management - Get Single Course"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented GET /api/courses/{course_id} with access control. Students/mentors can only view approved courses or their own."
+
+  - task: "Course Management - Update Course"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented PUT /api/courses/{course_id}. Admins can edit all courses. Mentors can only edit their own courses. Supports partial updates for title, description, mentor_id, batch_id, zoom_id, teams_id, video_urls."
+
+  - task: "Course Management - Delete Course"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented DELETE /api/courses/{course_id}. Admin-only endpoint to delete courses."
+
+  - task: "Course Management - Approve/Reject Course"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented PUT /api/courses/{course_id}/approve. Admin-only endpoint to approve/reject/set pending status for courses."
+
+  - task: "Course Management - Get Mentor Courses"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented GET /api/courses/mentor/{mentor_id}. Admins can view any mentor's courses. Mentors can only view their own. Students denied access."
+      - working: true
+        agent: "testing"
         comment: "✅ TESTED: Admin-only endpoint works correctly. Admin users can access all users list. Non-admin users (mentor, student) properly rejected with 403 Forbidden. Data fetched from Supabase database."
 
 frontend:
