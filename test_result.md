@@ -464,14 +464,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Course Management - Create Course"
-    - "Course Management - List Courses"
-    - "Course Management - Get Single Course"
-    - "Course Management - Update Course"
-    - "Course Management - Delete Course"
-    - "Course Management - Approve/Reject Course"
-    - "Course Management - Get Mentor Courses"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
