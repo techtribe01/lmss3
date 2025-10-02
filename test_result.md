@@ -167,15 +167,18 @@ backend:
   
   - task: "Get All Users - Admin Only (Supabase)"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Updated admin users endpoint to fetch from Supabase. Role-based access control maintained."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Admin-only endpoint works correctly. Admin users can access all users list. Non-admin users (mentor, student) properly rejected with 403 Forbidden. Data fetched from Supabase database."
 
 frontend:
   - task: "Login Page"
