@@ -529,6 +529,394 @@ async def get_mentor_courses(mentor_id: str, current_user: UserBase = Depends(ge
     
     return [CourseResponse(**c) for c in result.data]
 
+# ENROLLMENT MANAGEMENT ENDPOINTS
+
+@app.post("/api/enrollments", response_model=EnrollmentResponse)
+async def enroll_student(enrollment: EnrollmentCreate, current_user: UserBase = Depends(get_current_user)):
+    """Enroll a student in a course"""
+    # Only students can enroll themselves, or admins can enroll any student
+    if current_user.role not in ["student", "admin"]:
+        raise HTTPException(status_code=403, detail="Only students or admins can create enrollments")
+    
+    # Check if course exists and is approved
+    course_result = supabase.table("courses").select("*").eq("id", enrollment.course_id).execute()
+    if not course_result.data:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    course = course_result.data[0]
+    if course["approval_status"] != "approved":
+        raise HTTPException(status_code=400, detail="Cannot enroll in non-approved course")
+    
+    # Check if already enrolled
+    existing = supabase.table("enrollments").select("*").eq("student_id", current_user.id).eq("course_id", enrollment.course_id).execute()
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Student already enrolled in this course")
+    
+    # Create enrollment
+    enrollment_data = {
+        "id": str(uuid.uuid4()),
+        "student_id": current_user.id,
+        "course_id": enrollment.course_id,
+        "enrollment_date": datetime.now(timezone.utc).isoformat(),
+        "completion_status": "in_progress"
+    }
+    
+    result = supabase.table("enrollments").insert(enrollment_data).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create enrollment")
+    
+    return EnrollmentResponse(**result.data[0])
+
+@app.get("/api/enrollments", response_model=List[EnrollmentResponse])
+async def get_user_enrollments(current_user: UserBase = Depends(get_current_user)):
+    """Get current user's enrollments (students only)"""
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Only students can view their enrollments")
+    
+    result = supabase.table("enrollments").select("*").eq("student_id", current_user.id).execute()
+    
+    return [EnrollmentResponse(**e) for e in result.data]
+
+@app.get("/api/enrollments/student/{student_id}", response_model=List[EnrollmentResponse])
+async def get_student_enrollments(student_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get enrollments for a specific student (admin and mentors only)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only admins and mentors can view student enrollments")
+    
+    result = supabase.table("enrollments").select("*").eq("student_id", student_id).execute()
+    
+    return [EnrollmentResponse(**e) for e in result.data]
+
+@app.get("/api/enrollments/course/{course_id}", response_model=List[EnrollmentResponse])
+async def get_course_enrollments(course_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get all enrollments for a specific course"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only admins and mentors can view course enrollments")
+    
+    # Mentors can only view enrollments for their own courses
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", course_id).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only view enrollments for your own courses")
+    
+    result = supabase.table("enrollments").select("*").eq("course_id", course_id).execute()
+    
+    return [EnrollmentResponse(**e) for e in result.data]
+
+@app.delete("/api/enrollments/{course_id}/student/{student_id}")
+async def unenroll_student(course_id: str, student_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Unenroll a student from a course"""
+    # Students can unenroll themselves, admins can unenroll anyone
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=403, detail="Students can only unenroll themselves")
+    elif current_user.role not in ["student", "admin"]:
+        raise HTTPException(status_code=403, detail="Only students and admins can unenroll")
+    
+    # Check if enrollment exists
+    enrollment_result = supabase.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+    if not enrollment_result.data:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    
+    # Delete enrollment
+    result = supabase.table("enrollments").delete().eq("student_id", student_id).eq("course_id", course_id).execute()
+    
+    return {"message": "Student unenrolled successfully"}
+
+@app.put("/api/enrollments/{course_id}/student/{student_id}/status", response_model=EnrollmentResponse)
+async def update_enrollment_status(course_id: str, student_id: str, status_update: EnrollmentStatusUpdate, current_user: UserBase = Depends(get_current_user)):
+    """Update enrollment status (completion_status)"""
+    # Only mentors and admins can update enrollment status
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can update enrollment status")
+    
+    # Mentors can only update status for their own courses
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", course_id).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only update enrollments for your own courses")
+    
+    # Check if enrollment exists
+    enrollment_result = supabase.table("enrollments").select("*").eq("student_id", student_id).eq("course_id", course_id).execute()
+    if not enrollment_result.data:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    
+    # Update enrollment status
+    update_data = {
+        "completion_status": status_update.completion_status
+    }
+    
+    result = supabase.table("enrollments").update(update_data).eq("student_id", student_id).eq("course_id", course_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to update enrollment status")
+    
+    return EnrollmentResponse(**result.data[0])
+
+# TASK/ASSIGNMENT MANAGEMENT ENDPOINTS
+
+@app.post("/api/tasks", response_model=TaskResponse)
+async def create_task(task: TaskCreate, current_user: UserBase = Depends(get_current_user)):
+    """Create a new task/assignment"""
+    # Only mentors and admins can create tasks
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can create tasks")
+    
+    # Check if course exists
+    course_result = supabase.table("courses").select("*").eq("id", task.course_id).execute()
+    if not course_result.data:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Mentors can only create tasks for their own courses
+    if current_user.role == "mentor":
+        course = course_result.data[0]
+        if course["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only create tasks for your own courses")
+    
+    # Create task
+    task_data = {
+        "id": str(uuid.uuid4()),
+        "course_id": task.course_id,
+        "mentor_id": current_user.id,
+        "title": task.title,
+        "description": task.description,
+        "due_date": task.due_date,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("tasks").insert(task_data).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create task")
+    
+    return TaskResponse(**result.data[0])
+
+@app.get("/api/tasks", response_model=List[TaskResponse])
+async def get_tasks(course_id: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get tasks (optionally filtered by course_id)"""
+    query = supabase.table("tasks").select("*")
+    
+    if course_id:
+        # Check if user has access to the course
+        if current_user.role == "student":
+            # Students can only see tasks for courses they're enrolled in
+            enrollment_result = supabase.table("enrollments").select("*").eq("student_id", current_user.id).eq("course_id", course_id).execute()
+            if not enrollment_result.data:
+                raise HTTPException(status_code=403, detail="You are not enrolled in this course")
+        elif current_user.role == "mentor":
+            # Mentors can only see tasks for their own courses
+            course_result = supabase.table("courses").select("mentor_id").eq("id", course_id).execute()
+            if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+                raise HTTPException(status_code=403, detail="You can only view tasks for your own courses")
+        
+        query = query.eq("course_id", course_id)
+    else:
+        # If no course_id specified, filter by role
+        if current_user.role == "student":
+            # Students see tasks from their enrolled courses
+            enrollments = supabase.table("enrollments").select("course_id").eq("student_id", current_user.id).execute()
+            if not enrollments.data:
+                return []
+            course_ids = [e["course_id"] for e in enrollments.data]
+            query = query.in_("course_id", course_ids)
+        elif current_user.role == "mentor":
+            # Mentors see tasks from their courses
+            courses = supabase.table("courses").select("id").eq("mentor_id", current_user.id).execute()
+            if not courses.data:
+                return []
+            course_ids = [c["id"] for c in courses.data]
+            query = query.in_("course_id", course_ids)
+    
+    result = query.execute()
+    return [TaskResponse(**t) for t in result.data]
+
+@app.get("/api/tasks/{task_id}", response_model=TaskResponse)
+async def get_task(task_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get a specific task"""
+    result = supabase.table("tasks").select("*").eq("id", task_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task = result.data[0]
+    
+    # Check access permissions
+    if current_user.role == "student":
+        # Students can only view tasks for courses they're enrolled in
+        enrollment_result = supabase.table("enrollments").select("*").eq("student_id", current_user.id).eq("course_id", task["course_id"]).execute()
+        if not enrollment_result.data:
+            raise HTTPException(status_code=403, detail="You are not enrolled in this course")
+    elif current_user.role == "mentor":
+        # Mentors can only view their own tasks
+        if task["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only view your own tasks")
+    
+    return TaskResponse(**task)
+
+@app.put("/api/tasks/{task_id}", response_model=TaskResponse)
+async def update_task(task_id: str, task_update: TaskUpdate, current_user: UserBase = Depends(get_current_user)):
+    """Update a task"""
+    # Only mentors and admins can update tasks
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can update tasks")
+    
+    # Check if task exists
+    task_result = supabase.table("tasks").select("*").eq("id", task_id).execute()
+    if not task_result.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task = task_result.data[0]
+    
+    # Mentors can only update their own tasks
+    if current_user.role == "mentor" and task["mentor_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only update your own tasks")
+    
+    # Build update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if task_update.title is not None:
+        update_data["title"] = task_update.title
+    if task_update.description is not None:
+        update_data["description"] = task_update.description
+    if task_update.due_date is not None:
+        update_data["due_date"] = task_update.due_date
+    
+    result = supabase.table("tasks").update(update_data).eq("id", task_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to update task")
+    
+    return TaskResponse(**result.data[0])
+
+@app.delete("/api/tasks/{task_id}")
+async def delete_task(task_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Delete a task"""
+    # Only mentors and admins can delete tasks
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can delete tasks")
+    
+    # Check if task exists
+    task_result = supabase.table("tasks").select("*").eq("id", task_id).execute()
+    if not task_result.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task = task_result.data[0]
+    
+    # Mentors can only delete their own tasks
+    if current_user.role == "mentor" and task["mentor_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own tasks")
+    
+    # Delete task
+    result = supabase.table("tasks").delete().eq("id", task_id).execute()
+    
+    return {"message": "Task deleted successfully"}
+
+# TASK SUBMISSION ENDPOINTS
+
+@app.post("/api/task-submissions", response_model=TaskSubmissionResponse)
+async def submit_task(submission: TaskSubmissionCreate, current_user: UserBase = Depends(get_current_user)):
+    """Submit a task (students only)"""
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Only students can submit tasks")
+    
+    # Check if task exists
+    task_result = supabase.table("tasks").select("*").eq("id", submission.task_id).execute()
+    if not task_result.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    task = task_result.data[0]
+    
+    # Check if student is enrolled in the course
+    enrollment_result = supabase.table("enrollments").select("*").eq("student_id", current_user.id).eq("course_id", task["course_id"]).execute()
+    if not enrollment_result.data:
+        raise HTTPException(status_code=403, detail="You are not enrolled in this course")
+    
+    # Check if submission already exists
+    existing_submission = supabase.table("task_submissions").select("*").eq("task_id", submission.task_id).eq("student_id", current_user.id).execute()
+    if existing_submission.data:
+        raise HTTPException(status_code=400, detail="You have already submitted this task")
+    
+    # Create submission
+    submission_data = {
+        "id": str(uuid.uuid4()),
+        "task_id": submission.task_id,
+        "student_id": current_user.id,
+        "content": submission.content,
+        "file_url": submission.file_url,
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("task_submissions").insert(submission_data).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to create submission")
+    
+    return TaskSubmissionResponse(**result.data[0])
+
+@app.get("/api/task-submissions", response_model=List[TaskSubmissionResponse])
+async def get_task_submissions(task_id: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get task submissions"""
+    query = supabase.table("task_submissions").select("*")
+    
+    if current_user.role == "student":
+        # Students can only see their own submissions
+        query = query.eq("student_id", current_user.id)
+    elif current_user.role == "mentor":
+        # Mentors can see submissions for their courses' tasks
+        if task_id:
+            # Check if task belongs to mentor's course
+            task_result = supabase.table("tasks").select("*").eq("id", task_id).execute()
+            if not task_result.data or task_result.data[0]["mentor_id"] != current_user.id:
+                raise HTTPException(status_code=403, detail="You can only view submissions for your own courses")
+            query = query.eq("task_id", task_id)
+        else:
+            # Get all tasks from mentor's courses
+            mentor_tasks = supabase.table("tasks").select("id").eq("mentor_id", current_user.id).execute()
+            if not mentor_tasks.data:
+                return []
+            task_ids = [t["id"] for t in mentor_tasks.data]
+            query = query.in_("task_id", task_ids)
+    
+    if task_id and current_user.role == "admin":
+        query = query.eq("task_id", task_id)
+    
+    result = query.execute()
+    return [TaskSubmissionResponse(**s) for s in result.data]
+
+@app.put("/api/task-submissions/{submission_id}/grade", response_model=TaskSubmissionResponse)
+async def grade_task_submission(submission_id: str, grading: TaskGrading, current_user: UserBase = Depends(get_current_user)):
+    """Grade a task submission (mentors and admins only)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can grade submissions")
+    
+    # Check if submission exists
+    submission_result = supabase.table("task_submissions").select("*").eq("id", submission_id).execute()
+    if not submission_result.data:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    submission = submission_result.data[0]
+    
+    # Check if mentor has permission to grade (must be their task)
+    if current_user.role == "mentor":
+        task_result = supabase.table("tasks").select("mentor_id").eq("id", submission["task_id"]).execute()
+        if not task_result.data or task_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only grade submissions for your own tasks")
+    
+    # Update submission with grade and feedback
+    update_data = {
+        "grade": grading.grade,
+        "feedback": grading.feedback,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("task_submissions").update(update_data).eq("id", submission_id).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to grade submission")
+    
+    return TaskSubmissionResponse(**result.data[0])
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
