@@ -2573,68 +2573,72 @@ const studentMenuItems = [
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          
-          <Route path="/admin/*" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <DashboardLayout menuItems={adminMenuItems} role="admin">
-                <Routes>
-                  <Route path="/" element={<AdminDashboard />} />
-                  <Route path="/courses" element={<CoursesManagement />} />
-                  <Route path="/mentors" element={<MentorManagement />} />
-                  <Route path="/students" element={<StudentManagement />} />
-                  <Route path="/reports" element={<ReportsOverview />} />
-                  <Route path="/course-approval" element={<CourseApproval />} />
-                  <Route path="/batch-downloads" element={<BatchDownloads />} />
-                  <Route path="/mock-interviews" element={<MockInterviews />} />
-                  <Route path="/assignments" element={<AssignmentsGrading />} />
-                  <Route path="/fee-alerts" element={<FeeAlerts />} />
-                  <Route path="/security" element={<SecurityProctoring />} />
-                </Routes>
-              </DashboardLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/mentor/*" element={
-            <ProtectedRoute allowedRoles={['mentor']}>
-              <DashboardLayout menuItems={mentorMenuItems} role="mentor">
-                <Routes>
-                  <Route path="/" element={<MentorDashboard />} />
-                  <Route path="/courses" element={<MentorCourses />} />
-                  <Route path="/video-sessions" element={<VideoSessions />} />
-                  <Route path="/tasks" element={<TaskAssignment />} />
-                  <Route path="/attendance" element={<AttendanceManagement />} />
-                  <Route path="/progress" element={<ProgressTracking />} />
-                  <Route path="/materials" element={<MaterialsUpload />} />
-                  <Route path="/certificates" element={<CertificateGeneration />} />
-                </Routes>
-              </DashboardLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/student/*" element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <DashboardLayout menuItems={studentMenuItems} role="student">
-                <Routes>
-                  <Route path="/" element={<StudentDashboard />} />
-                  <Route path="/courses" element={<CoursesList />} />
-                  <Route path="/registered" element={<RegisteredCourses />} />
-                  <Route path="/tasks" element={<TaskSubmission />} />
-                  <Route path="/attendance" element={<AttendanceView />} />
-                  <Route path="/certificates" element={<Certificates />} />
-                </Routes>
-              </DashboardLayout>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/" element={<Navigate to="/login" />} />
-        </Routes>
-      </AuthProvider>
-    </Router>
+    <ThemeProvider>
+      <ToastProvider>
+        <Router>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              
+              <Route path="/admin/*" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <DashboardLayout menuItems={adminMenuItems} role="admin">
+                    <Routes>
+                      <Route path="/" element={<AdminDashboard />} />
+                      <Route path="/courses" element={<CoursesManagement />} />
+                      <Route path="/mentors" element={<MentorManagement />} />
+                      <Route path="/students" element={<StudentManagement />} />
+                      <Route path="/reports" element={<ReportsOverview />} />
+                      <Route path="/course-approval" element={<CourseApproval />} />
+                      <Route path="/batch-downloads" element={<BatchDownloads />} />
+                      <Route path="/mock-interviews" element={<MockInterviews />} />
+                      <Route path="/assignments" element={<AssignmentsGrading />} />
+                      <Route path="/fee-alerts" element={<FeeAlerts />} />
+                      <Route path="/security" element={<SecurityProctoring />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/mentor/*" element={
+                <ProtectedRoute allowedRoles={['mentor']}>
+                  <DashboardLayout menuItems={mentorMenuItems} role="mentor">
+                    <Routes>
+                      <Route path="/" element={<MentorDashboard />} />
+                      <Route path="/courses" element={<MentorCourses />} />
+                      <Route path="/video-sessions" element={<VideoSessions />} />
+                      <Route path="/tasks" element={<TaskAssignment />} />
+                      <Route path="/attendance" element={<AttendanceManagement />} />
+                      <Route path="/progress" element={<ProgressTracking />} />
+                      <Route path="/materials" element={<MaterialsUpload />} />
+                      <Route path="/certificates" element={<CertificateGeneration />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/student/*" element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <DashboardLayout menuItems={studentMenuItems} role="student">
+                    <Routes>
+                      <Route path="/" element={<StudentDashboard />} />
+                      <Route path="/courses" element={<CoursesList />} />
+                      <Route path="/registered" element={<RegisteredCourses />} />
+                      <Route path="/tasks" element={<TaskSubmission />} />
+                      <Route path="/attendance" element={<AttendanceView />} />
+                      <Route path="/certificates" element={<Certificates />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/" element={<Navigate to="/login" />} />
+            </Routes>
+          </AuthProvider>
+        </Router>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
 
