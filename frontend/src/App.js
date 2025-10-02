@@ -96,7 +96,13 @@ const StatCard = ({ icon, label, value, trend, color = 'blue' }) => (
 );
 
 const CourseCard = ({ title, instructor, students, progress, image, category, duration, level }) => (
-  <div className="course-card">
+  <motion.div 
+    className="course-card"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    whileHover={{ y: -5, transition: { duration: 0.2 } }}
+    whileTap={{ scale: 0.98 }}
+  >
     <div className="course-image" style={{ background: image }}>
       {category && <span className="course-badge">{category}</span>}
     </div>
@@ -111,13 +117,18 @@ const CourseCard = ({ title, instructor, students, progress, image, category, du
       {progress !== undefined && (
         <div className="progress-container">
           <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+            <motion.div 
+              className="progress-fill" 
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+            ></motion.div>
           </div>
           <span className="progress-text">{progress}% Complete</span>
         </div>
       )}
     </div>
-  </div>
+  </motion.div>
 );
 
 const DataTable = ({ columns, data, actions }) => (
