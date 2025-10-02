@@ -1,9 +1,15 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Sun, Moon, Monitor, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import './App.css';
 import * as mockService from './services/mockService';
-import { ToastProvider, useToast } from './components/Toast';
+import { loginSchema, registerSchema } from './lib/validationSchemas';
+import { Input, PasswordInput, Select, Button, FormValidationSummary } from './components/FormComponents';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import { SkeletonCard, SkeletonTable, SkeletonStat, SkeletonList } from './components/SkeletonLoader';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
