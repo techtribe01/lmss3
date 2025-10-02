@@ -34,6 +34,10 @@ class LMSAPITester:
                 response = self.session.get(url, headers=headers)
             elif method.upper() == "POST":
                 response = self.session.post(url, json=data, headers=headers)
+            elif method.upper() == "PUT":
+                response = self.session.put(url, json=data, headers=headers)
+            elif method.upper() == "DELETE":
+                response = self.session.delete(url, headers=headers)
             else:
                 return False, None, f"Unsupported method: {method}"
                 
