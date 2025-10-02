@@ -724,6 +724,38 @@ const CoursesManagement = () => {
 
 const MentorManagement = () => {
   const [showModal, setShowModal] = useState(false);
+  const [mentors, setMentors] = useState([]);
+  const [editingMentor, setEditingMentor] = useState(null);
+  const [filter, setFilter] = useState('All');
+
+  useEffect(() => {
+    loadMentors();
+  }, [filter]);
+
+  const loadMentors = async () => {
+    const allMentors = await mockService.getUsers('mentor');
+    if (filter === 'All') {
+      setMentors(allMentors);
+    } else {
+      setMentors(allMentors.filter(m => m.department === filter));
+    }
+  };
+
+  const handleEdit = (mentor) => {
+    setEditingMentor(mentor);
+    setShowModal(true);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (editingMentor) {
+      await mockService.updateUser(editingMentor.id, editingMentor);
+      alert('Mentor updated successfully!');
+      setShowModal(false);
+      setEditingMentor(null);
+      loadMentors();
+    }
+  };
   
   return (
     <div className="page-wrapper">
@@ -732,54 +764,92 @@ const MentorManagement = () => {
           <h1 className="page-title">Mentor Management</h1>
           <p className="page-subtitle">Manage mentor accounts and assignments</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Mentor</button>
       </div>
 
-      <SearchFilter filters={[{ label: 'Department', options: ['All', 'Programming', 'Design', 'Business'] }]} />
+      <div className="search-filter-bar">
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input type="text" placeholder="Search mentors..." />
+        </div>
+        <div className="filter-group">
+          <select className="filter-select" onChange={(e) => setFilter(e.target.value)}>
+            <option value="All">All Departments</option>
+            <option value="Programming">Programming</option>
+            <option value="Design">Design</option>
+            <option value="Business">Business</option>
+            <option value="Data Science">Data Science</option>
+          </select>
+        </div>
+      </div>
 
       <div className="dashboard-card">
-        <DataTable 
-          columns={['Name', 'Email', 'Courses', 'Students', 'Rating', 'Status']}
-          data={[
-            ['John Doe', 'john@example.com', '5', '250', '⭐ 4.8', <span className="badge badge-success">Active</span>],
-            ['Jane Smith', 'jane@example.com', '3', '180', '⭐ 4.9', <span className="badge badge-success">Active</span>],
-            ['Mike Johnson', 'mike@example.com', '4', '220', '⭐ 4.7', <span className="badge badge-success">Active</span>],
-            ['Sarah Williams', 'sarah@example.com', '2', '95', '⭐ 4.6', <span className="badge badge-warning">On Leave</span>]
-          ]}
-          actions={[
-            { icon: '👁️', label: 'View' },
-            { icon: '✏️', label: 'Edit' },
-            { icon: '🗑️', label: 'Delete', variant: 'danger' }
-          ]}
-        />
+        {mentors.length === 0 ? (
+          <div className="empty-state">
+            <p>👨‍🏫 No mentors found</p>
+          </div>
+        ) : (
+          <DataTable 
+            columns={['Name', 'Email', 'Department', 'Courses', 'Students', 'Rating', 'Status']}
+            data={mentors.map((mentor, idx) => [
+              mentor.full_name,
+              mentor.email,
+              mentor.department || 'N/A',
+              mentor.total_courses || 0,
+              mentor.total_students || 0,
+              mentor.rating ? `⭐ ${mentor.rating}` : 'N/A',
+              <span className={`badge badge-${mentor.status === 'active' ? 'success' : 'warning'}`}>
+                {mentor.status ? mentor.status.replace('_', ' ') : 'Active'}
+              </span>
+            ])}
+            actions={[
+              { icon: '✏️', label: 'Edit' }
+            ]}
+          />
+        )}
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add New Mentor">
-        <form className="modal-form">
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setEditingMentor(null); }} title="Edit Mentor">
+        <form className="modal-form" onSubmit={handleUpdate}>
           <div className="form-group">
             <label>Full Name</label>
-            <input type="text" placeholder="Enter full name" />
+            <input type="text" placeholder="Enter full name" required
+              value={editingMentor?.full_name || ''} 
+              onChange={(e) => setEditingMentor({...editingMentor, full_name: e.target.value})} />
           </div>
           <div className="form-group">
             <label>Email</label>
-            <input type="email" placeholder="Enter email address" />
+            <input type="email" placeholder="Enter email address" required
+              value={editingMentor?.email || ''} 
+              onChange={(e) => setEditingMentor({...editingMentor, email: e.target.value})} />
           </div>
           <div className="form-group">
             <label>Department</label>
-            <select>
-              <option>Select department</option>
-              <option>Programming</option>
-              <option>Design</option>
-              <option>Business</option>
+            <select value={editingMentor?.department || 'Programming'} 
+              onChange={(e) => setEditingMentor({...editingMentor, department: e.target.value})}>
+              <option value="Programming">Programming</option>
+              <option value="Design">Design</option>
+              <option value="Business">Business</option>
+              <option value="Data Science">Data Science</option>
             </select>
           </div>
           <div className="form-group">
             <label>Specialization</label>
-            <input type="text" placeholder="e.g. React, Node.js" />
+            <input type="text" placeholder="e.g. React, Node.js" 
+              value={editingMentor?.specialization || ''} 
+              onChange={(e) => setEditingMentor({...editingMentor, specialization: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label>Status</label>
+            <select value={editingMentor?.status || 'active'} 
+              onChange={(e) => setEditingMentor({...editingMentor, status: e.target.value})}>
+              <option value="active">Active</option>
+              <option value="on_leave">On Leave</option>
+              <option value="inactive">Inactive</option>
+            </select>
           </div>
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-            <button type="submit" className="btn-primary">Add Mentor</button>
+            <button type="button" className="btn-secondary" onClick={() => { setShowModal(false); setEditingMentor(null); }}>Cancel</button>
+            <button type="submit" className="btn-primary">Update Mentor</button>
           </div>
         </form>
       </Modal>
