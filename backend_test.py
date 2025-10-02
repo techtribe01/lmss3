@@ -687,9 +687,13 @@ class LMSAPITester:
         results.append(self.test_get_all_users_non_admin("mentor"))
         results.append(self.test_get_all_users_non_admin("student"))
         
+        # Test 9: Course Management Tests
+        course_results = self.run_course_management_tests()
+        results.extend(course_results)
+        
         # Summary
-        print("=" * 60)
-        print("📊 TEST SUMMARY")
+        print("\n" + "=" * 60)
+        print("📊 COMPREHENSIVE TEST SUMMARY")
         print("=" * 60)
         passed = sum(results)
         total = len(results)
@@ -698,6 +702,8 @@ class LMSAPITester:
         
         if passed == total:
             print("\n🎉 All tests passed! Backend APIs are working correctly.")
+            print("✅ Authentication system: WORKING")
+            print("✅ Course management system: WORKING")
             return True
         else:
             print(f"\n⚠️  {total - passed} test(s) failed. Please check the issues above.")
