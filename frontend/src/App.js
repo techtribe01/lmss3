@@ -471,21 +471,29 @@ const AdminDashboard = () => {
 
       <div className="dashboard-card">
         <div className="card-header">
-          <h3>Pending Actions</h3>
-          <span className="badge badge-warning">5 Items</span>
+          <h3>Pending Course Approvals</h3>
+          <span className="badge badge-warning">{courses.length} Items</span>
         </div>
-        <DataTable 
-          columns={['Course Name', 'Mentor', 'Category', 'Status', 'Date']}
-          data={[
-            ['Advanced JavaScript', 'John Doe', 'Programming', <span className="badge badge-warning">Pending Approval</span>, '2024-01-15'],
-            ['UI/UX Design Fundamentals', 'Jane Smith', 'Design', <span className="badge badge-warning">Review Required</span>, '2024-01-14'],
-            ['Python for Data Science', 'Mike Johnson', 'Data Science', <span className="badge badge-warning">Pending Approval</span>, '2024-01-13']
-          ]}
-          actions={[
-            { icon: '✓', label: 'Approve', variant: 'success' },
-            { icon: '✕', label: 'Reject', variant: 'danger' }
-          ]}
-        />
+        {courses.length === 0 ? (
+          <div className="empty-state">
+            <p>✅ No pending approvals</p>
+          </div>
+        ) : (
+          <DataTable 
+            columns={['Course Name', 'Mentor', 'Category', 'Level', 'Status']}
+            data={courses.map(course => [
+              course.title,
+              course.instructor_name,
+              course.category,
+              course.level,
+              <span className="badge badge-warning">Pending Approval</span>
+            ])}
+            actions={[
+              { icon: '✓', label: 'Approve', variant: 'success' },
+              { icon: '✕', label: 'Reject', variant: 'danger' }
+            ]}
+          />
+        )}
       </div>
     </div>
   );
