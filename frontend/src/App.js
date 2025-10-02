@@ -612,10 +612,21 @@ const Sidebar = ({ isOpen, toggleSidebar, menuItems, role }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
+  const { theme, actualTheme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const getThemeIcon = () => {
+    if (theme === 'system') return <Monitor size={18} />;
+    return actualTheme === 'dark' ? <Moon size={18} /> : <Sun size={18} />;
+  };
+
+  const getThemeText = () => {
+    if (theme === 'system') return 'System Theme';
+    return actualTheme === 'dark' ? 'Dark Theme' : 'Light Theme';
   };
 
   return (
@@ -635,6 +646,15 @@ const Sidebar = ({ isOpen, toggleSidebar, menuItems, role }) => {
         </nav>
 
         <div className="sidebar-footer">
+          <button 
+            onClick={toggleTheme} 
+            className="theme-switcher"
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'} theme`}
+          >
+            <span className="theme-icon">{getThemeIcon()}</span>
+            <span className="theme-text">{getThemeText()}</span>
+          </button>
+          
           <button onClick={handleLogout} className="logout-button">
             <span className="sidebar-icon">⎋</span>
             <span className="sidebar-text">Logout</span>
