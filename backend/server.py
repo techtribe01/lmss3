@@ -1052,6 +1052,435 @@ async def grade_task_submission(submission_id: str, grading: TaskGrading, curren
     
     return TaskSubmissionResponse(**result.data[0])
 
+# ===== ATTENDANCE TRACKING SYSTEM =====
+
+@app.post("/api/attendance/checkin", response_model=AttendanceResponse)
+async def checkin_attendance(attendance: AttendanceCreate, current_user: UserBase = Depends(get_current_user)):
+    """Student check-in to course"""
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Only students can check in")
+    
+    # Check if student is enrolled in the course
+    enrollment_result = supabase.table("enrollments").select("id").eq("course_id", attendance.course_id).eq("student_id", current_user.id).execute()
+    if not enrollment_result.data:
+        raise HTTPException(status_code=403, detail="You must be enrolled in this course to check in")
+    
+    # Check if already checked in today
+    existing_result = supabase.table("attendance").select("*").eq("student_id", current_user.id).eq("course_id", attendance.course_id).eq("date", attendance.date).execute()
+    
+    if existing_result.data:
+        # Update existing record
+        update_data = {
+            "check_in": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        result = supabase.table("attendance").update(update_data).eq("id", existing_result.data[0]["id"]).execute()
+        return AttendanceResponse(**result.data[0])
+    else:
+        # Create new attendance record
+        attendance_data = {
+            "id": str(uuid.uuid4()),
+            "student_id": current_user.id,
+            "course_id": attendance.course_id,
+            "date": attendance.date,
+            "check_in": datetime.now(timezone.utc).isoformat(),
+            "ai_alerts": [],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        result = supabase.table("attendance").insert(attendance_data).execute()
+        return AttendanceResponse(**result.data[0])
+
+@app.post("/api/attendance/checkout")
+async def checkout_attendance(course_id: str, date: str, current_user: UserBase = Depends(get_current_user)):
+    """Student check-out from course"""
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Only students can check out")
+    
+    # Find existing attendance record
+    attendance_result = supabase.table("attendance").select("*").eq("student_id", current_user.id).eq("course_id", course_id).eq("date", date).execute()
+    
+    if not attendance_result.data:
+        raise HTTPException(status_code=404, detail="No check-in record found for today")
+    
+    # Update with check-out time
+    update_data = {
+        "check_out": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("attendance").update(update_data).eq("id", attendance_result.data[0]["id"]).execute()
+    return {"message": "Checked out successfully"}
+
+@app.get("/api/attendance", response_model=List[AttendanceResponse])
+async def get_attendance_records(course_id: str = None, student_id: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get attendance records based on role and filters"""
+    query = supabase.table("attendance").select("*")
+    
+    if current_user.role == "student":
+        # Students can only see their own attendance
+        query = query.eq("student_id", current_user.id)
+        if course_id:
+            query = query.eq("course_id", course_id)
+    elif current_user.role == "mentor":
+        # Mentors can see attendance for their courses
+        mentor_courses = supabase.table("courses").select("id").eq("mentor_id", current_user.id).execute()
+        if not mentor_courses.data:
+            return []
+        course_ids = [c["id"] for c in mentor_courses.data]
+        query = query.in_("course_id", course_ids)
+        
+        if course_id and course_id not in course_ids:
+            raise HTTPException(status_code=403, detail="You can only view attendance for your own courses")
+        if course_id:
+            query = query.eq("course_id", course_id)
+        if student_id:
+            query = query.eq("student_id", student_id)
+    elif current_user.role == "admin":
+        # Admins can see all attendance
+        if course_id:
+            query = query.eq("course_id", course_id)
+        if student_id:
+            query = query.eq("student_id", student_id)
+    
+    result = query.order("date", desc=True).execute()
+    return [AttendanceResponse(**a) for a in result.data]
+
+@app.get("/api/attendance/student/{student_id}", response_model=List[AttendanceResponse])
+async def get_student_attendance(student_id: str, course_id: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get specific student's attendance records"""
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=403, detail="Students can only view their own attendance")
+    
+    if current_user.role == "mentor":
+        # Check if mentor has access to the student's courses
+        if course_id:
+            mentor_courses = supabase.table("courses").select("id").eq("mentor_id", current_user.id).eq("id", course_id).execute()
+            if not mentor_courses.data:
+                raise HTTPException(status_code=403, detail="You can only view attendance for your own courses")
+    
+    query = supabase.table("attendance").select("*").eq("student_id", student_id)
+    if course_id:
+        query = query.eq("course_id", course_id)
+    
+    result = query.order("date", desc=True).execute()
+    return [AttendanceResponse(**a) for a in result.data]
+
+@app.get("/api/attendance/course/{course_id}", response_model=List[AttendanceResponse])
+async def get_course_attendance(course_id: str, date: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get attendance records for a specific course"""
+    if current_user.role == "mentor":
+        # Check if mentor owns this course
+        course_result = supabase.table("courses").select("mentor_id").eq("id", course_id).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only view attendance for your own courses")
+    
+    query = supabase.table("attendance").select("*").eq("course_id", course_id)
+    if date:
+        query = query.eq("date", date)
+    
+    result = query.order("date", desc=True).execute()
+    return [AttendanceResponse(**a) for a in result.data]
+
+@app.put("/api/attendance/{attendance_id}", response_model=AttendanceResponse)
+async def update_attendance_record(attendance_id: str, update: AttendanceUpdate, current_user: UserBase = Depends(get_current_user)):
+    """Update attendance record (mentors and admins only)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can update attendance records")
+    
+    # Check if attendance record exists
+    attendance_result = supabase.table("attendance").select("*").eq("id", attendance_id).execute()
+    if not attendance_result.data:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    
+    attendance = attendance_result.data[0]
+    
+    # Check mentor permission
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", attendance["course_id"]).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only update attendance for your own courses")
+    
+    # Prepare update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if update.check_in is not None:
+        update_data["check_in"] = update.check_in
+    if update.check_out is not None:
+        update_data["check_out"] = update.check_out
+    if update.ai_alerts is not None:
+        update_data["ai_alerts"] = update.ai_alerts
+    
+    result = supabase.table("attendance").update(update_data).eq("id", attendance_id).execute()
+    return AttendanceResponse(**result.data[0])
+
+# ===== MATERIALS MANAGEMENT SYSTEM =====
+
+@app.post("/api/materials", response_model=MaterialResponse)
+async def upload_material(material: MaterialCreate, current_user: UserBase = Depends(get_current_user)):
+    """Upload learning material (mentors and admins only)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can upload materials")
+    
+    # Check if user has access to the course
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", material.course_id).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only upload materials for your own courses")
+    
+    material_data = {
+        "id": str(uuid.uuid4()),
+        "course_id": material.course_id,
+        "mentor_id": current_user.id,
+        "title": material.title,
+        "description": material.description,
+        "file_url": material.file_url,
+        "material_type": material.material_type,
+        "is_visible": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("materials").insert(material_data).execute()
+    return MaterialResponse(**result.data[0])
+
+@app.get("/api/materials", response_model=List[MaterialResponse])
+async def get_materials(course_id: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get learning materials based on user role"""
+    query = supabase.table("materials").select("*")
+    
+    if current_user.role == "student":
+        # Students can only see materials for courses they're enrolled in and that are visible
+        enrolled_courses = supabase.table("enrollments").select("course_id").eq("student_id", current_user.id).execute()
+        if not enrolled_courses.data:
+            return []
+        course_ids = [e["course_id"] for e in enrolled_courses.data]
+        query = query.in_("course_id", course_ids).eq("is_visible", True)
+    elif current_user.role == "mentor":
+        # Mentors can see materials for their courses
+        mentor_courses = supabase.table("courses").select("id").eq("mentor_id", current_user.id).execute()
+        if not mentor_courses.data:
+            return []
+        course_ids = [c["id"] for c in mentor_courses.data]
+        query = query.in_("course_id", course_ids)
+    # Admins can see all materials
+    
+    if course_id:
+        query = query.eq("course_id", course_id)
+    
+    result = query.order("created_at", desc=True).execute()
+    return [MaterialResponse(**m) for m in result.data]
+
+@app.get("/api/materials/course/{course_id}", response_model=List[MaterialResponse])
+async def get_course_materials(course_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get materials for a specific course"""
+    # Check access permissions
+    if current_user.role == "student":
+        # Check if student is enrolled
+        enrollment_result = supabase.table("enrollments").select("id").eq("student_id", current_user.id).eq("course_id", course_id).execute()
+        if not enrollment_result.data:
+            raise HTTPException(status_code=403, detail="You must be enrolled in this course to view materials")
+        # Students only see visible materials
+        query = supabase.table("materials").select("*").eq("course_id", course_id).eq("is_visible", True)
+    elif current_user.role == "mentor":
+        # Check if mentor owns the course
+        course_result = supabase.table("courses").select("mentor_id").eq("id", course_id).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only view materials for your own courses")
+        query = supabase.table("materials").select("*").eq("course_id", course_id)
+    else:
+        # Admins can see all materials
+        query = supabase.table("materials").select("*").eq("course_id", course_id)
+    
+    result = query.order("created_at", desc=True).execute()
+    return [MaterialResponse(**m) for m in result.data]
+
+@app.get("/api/materials/{material_id}", response_model=MaterialResponse)
+async def get_material(material_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get specific material details"""
+    material_result = supabase.table("materials").select("*").eq("id", material_id).execute()
+    if not material_result.data:
+        raise HTTPException(status_code=404, detail="Material not found")
+    
+    material = material_result.data[0]
+    
+    # Check access permissions
+    if current_user.role == "student":
+        # Check if student is enrolled and material is visible
+        enrollment_result = supabase.table("enrollments").select("id").eq("student_id", current_user.id).eq("course_id", material["course_id"]).execute()
+        if not enrollment_result.data or not material["is_visible"]:
+            raise HTTPException(status_code=403, detail="Access denied to this material")
+    elif current_user.role == "mentor":
+        # Check if mentor owns the course
+        course_result = supabase.table("courses").select("mentor_id").eq("id", material["course_id"]).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only access materials for your own courses")
+    
+    return MaterialResponse(**material)
+
+@app.put("/api/materials/{material_id}", response_model=MaterialResponse)
+async def update_material(material_id: str, update: MaterialUpdate, current_user: UserBase = Depends(get_current_user)):
+    """Update material (mentors and admins only)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can update materials")
+    
+    # Check if material exists
+    material_result = supabase.table("materials").select("*").eq("id", material_id).execute()
+    if not material_result.data:
+        raise HTTPException(status_code=404, detail="Material not found")
+    
+    material = material_result.data[0]
+    
+    # Check mentor permission
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", material["course_id"]).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only update materials for your own courses")
+    
+    # Prepare update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if update.title is not None:
+        update_data["title"] = update.title
+    if update.description is not None:
+        update_data["description"] = update.description
+    if update.file_url is not None:
+        update_data["file_url"] = update.file_url
+    if update.material_type is not None:
+        update_data["material_type"] = update.material_type
+    
+    result = supabase.table("materials").update(update_data).eq("id", material_id).execute()
+    return MaterialResponse(**result.data[0])
+
+@app.delete("/api/materials/{material_id}")
+async def delete_material(material_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Delete material (mentors and admins only)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can delete materials")
+    
+    # Check if material exists
+    material_result = supabase.table("materials").select("*").eq("id", material_id).execute()
+    if not material_result.data:
+        raise HTTPException(status_code=404, detail="Material not found")
+    
+    material = material_result.data[0]
+    
+    # Check mentor permission
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", material["course_id"]).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only delete materials for your own courses")
+    
+    result = supabase.table("materials").delete().eq("id", material_id).execute()
+    return {"message": "Material deleted successfully"}
+
+# ===== CERTIFICATE GENERATION SYSTEM =====
+
+@app.post("/api/certificates/generate", response_model=CertificateResponse)
+async def generate_certificate(cert_data: CertificateGenerate, current_user: UserBase = Depends(get_current_user)):
+    """Generate certificate for student (mentors and admins only)"""
+    if current_user.role not in ["admin", "mentor"]:
+        raise HTTPException(status_code=403, detail="Only mentors and admins can generate certificates")
+    
+    # Check if student is enrolled and completed the course
+    enrollment_result = supabase.table("enrollments").select("*").eq("student_id", cert_data.student_id).eq("course_id", cert_data.course_id).execute()
+    if not enrollment_result.data:
+        raise HTTPException(status_code=404, detail="Student enrollment not found")
+    
+    enrollment = enrollment_result.data[0]
+    if enrollment["completion_status"] != "completed":
+        raise HTTPException(status_code=400, detail="Student has not completed the course")
+    
+    # Check mentor permission
+    if current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", cert_data.course_id).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only generate certificates for your own courses")
+    
+    # Check if certificate already exists
+    existing_cert = supabase.table("certificates").select("id").eq("student_id", cert_data.student_id).eq("course_id", cert_data.course_id).execute()
+    if existing_cert.data:
+        raise HTTPException(status_code=400, detail="Certificate already exists for this student and course")
+    
+    # Generate certificate (mock URL for now)
+    certificate_data = {
+        "id": str(uuid.uuid4()),
+        "student_id": cert_data.student_id,
+        "course_id": cert_data.course_id,
+        "certificate_url": f"https://certificates.lms.com/{str(uuid.uuid4())}.pdf",
+        "issued_date": datetime.now(timezone.utc).isoformat(),
+        "completion_date": cert_data.completion_date or datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = supabase.table("certificates").insert(certificate_data).execute()
+    
+    # Update enrollment with certificate URL
+    supabase.table("enrollments").update({"certificate_url": certificate_data["certificate_url"]}).eq("id", enrollment["id"]).execute()
+    
+    return CertificateResponse(**result.data[0])
+
+@app.get("/api/certificates", response_model=List[CertificateResponse])
+async def get_certificates(student_id: str = None, course_id: str = None, current_user: UserBase = Depends(get_current_user)):
+    """Get certificates based on user role"""
+    query = supabase.table("certificates").select("*")
+    
+    if current_user.role == "student":
+        # Students can only see their own certificates
+        query = query.eq("student_id", current_user.id)
+    elif current_user.role == "mentor":
+        # Mentors can see certificates for their courses
+        mentor_courses = supabase.table("courses").select("id").eq("mentor_id", current_user.id).execute()
+        if not mentor_courses.data:
+            return []
+        course_ids = [c["id"] for c in mentor_courses.data]
+        query = query.in_("course_id", course_ids)
+    # Admins can see all certificates
+    
+    if student_id and current_user.role in ["admin", "mentor"]:
+        query = query.eq("student_id", student_id)
+    if course_id:
+        query = query.eq("course_id", course_id)
+    
+    result = query.order("issued_date", desc=True).execute()
+    return [CertificateResponse(**c) for c in result.data]
+
+@app.get("/api/certificates/student/{student_id}", response_model=List[CertificateResponse])
+async def get_student_certificates(student_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get certificates for a specific student"""
+    if current_user.role == "student" and current_user.id != student_id:
+        raise HTTPException(status_code=403, detail="Students can only view their own certificates")
+    
+    query = supabase.table("certificates").select("*").eq("student_id", student_id)
+    
+    if current_user.role == "mentor":
+        # Filter by mentor's courses
+        mentor_courses = supabase.table("courses").select("id").eq("mentor_id", current_user.id).execute()
+        if not mentor_courses.data:
+            return []
+        course_ids = [c["id"] for c in mentor_courses.data]
+        query = query.in_("course_id", course_ids)
+    
+    result = query.order("issued_date", desc=True).execute()
+    return [CertificateResponse(**c) for c in result.data]
+
+@app.get("/api/certificates/{certificate_id}", response_model=CertificateResponse)
+async def get_certificate(certificate_id: str, current_user: UserBase = Depends(get_current_user)):
+    """Get specific certificate details"""
+    certificate_result = supabase.table("certificates").select("*").eq("id", certificate_id).execute()
+    if not certificate_result.data:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    certificate = certificate_result.data[0]
+    
+    # Check access permissions
+    if current_user.role == "student" and certificate["student_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only view your own certificates")
+    elif current_user.role == "mentor":
+        course_result = supabase.table("courses").select("mentor_id").eq("id", certificate["course_id"]).execute()
+        if not course_result.data or course_result.data[0]["mentor_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="You can only view certificates for your own courses")
+    
+    return CertificateResponse(**certificate)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
