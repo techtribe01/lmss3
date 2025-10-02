@@ -197,15 +197,18 @@ backend:
 
   - task: "Course Management - List Courses"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented GET /api/courses endpoint with role-based filtering. Students see only approved courses. Mentors see approved + their own courses. Admins see all courses. Supports approval_status filter."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Role-based course listing works perfectly. Students see only approved courses (0 when all pending). Mentors see approved courses + their own (any status). Admins see all courses. Filtering logic correctly implemented."
 
   - task: "Course Management - Get Single Course"
     implemented: true
