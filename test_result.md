@@ -182,15 +182,18 @@ backend:
 
   - task: "Course Management - Create Course"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented POST /api/courses endpoint. Admin and mentors can create courses. Auto-assigns mentor_id if mentor creates. Sets approval_status to 'pending' by default."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Course creation works perfectly. Admin can create courses with specified mentor_id. Mentors can create courses (auto-assigned to themselves). Students correctly denied with 403. All courses created with 'pending' status. Data persisted in Supabase database."
 
   - task: "Course Management - List Courses"
     implemented: true
