@@ -601,7 +601,7 @@ const RegisterPage = () => {
           transition={{ delay: 0.5 }}
         >
           Already have an account? <Link to="/login">Sign in</Link>
-        </p>
+        </motion.p>
       </motion.div>
     </motion.div>
   );
