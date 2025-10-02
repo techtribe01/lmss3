@@ -299,26 +299,30 @@ class LMSAPITester:
         
         results = []
         
+        # Generate unique identifiers for this test run
+        import time
+        timestamp = str(int(time.time()))
+        
         # Test 1: Health Check
         results.append(self.test_health_check())
         
-        # Test 2: User Registration
-        results.append(self.test_register_user("admin", "admin_user", "admin@lms.com", "Admin User", "admin123"))
-        results.append(self.test_register_user("mentor", "mentor_user", "mentor@lms.com", "Mentor User", "mentor123"))
-        results.append(self.test_register_user("student", "student_user", "student@lms.com", "Student User", "student123"))
+        # Test 2: User Registration (with unique emails)
+        results.append(self.test_register_user("admin", f"test_admin_{timestamp}", f"test_admin_{timestamp}@test.com", "Test Admin User", "admin123"))
+        results.append(self.test_register_user("mentor", f"test_mentor_{timestamp}", f"test_mentor_{timestamp}@test.com", "Test Mentor User", "mentor123"))
+        results.append(self.test_register_user("student", f"test_student_{timestamp}", f"test_student_{timestamp}@test.com", "Test Student User", "student123"))
         
-        # Test 3: Duplicate Registration
+        # Test 3: Duplicate Registration (try to register with existing email)
         results.append(self.test_duplicate_registration())
         
-        # Test 4: User Login
-        results.append(self.test_login("admin", "admin_user", "admin123"))
-        results.append(self.test_login("mentor", "mentor_user", "mentor123"))
-        results.append(self.test_login("student", "student_user", "student123"))
+        # Test 4: User Login (use existing users from database)
+        results.append(self.test_login("admin", "admin1", "password123"))
+        results.append(self.test_login("mentor", "mentor1", "password123"))
+        results.append(self.test_login("student", "student1", "password123"))
         
         # Test 5: Invalid Login
         results.append(self.test_invalid_login())
         
-        # Test 6: Get Current User
+        # Test 6: Get Current User (use tokens from login)
         results.append(self.test_get_current_user("admin"))
         results.append(self.test_get_current_user("mentor"))
         results.append(self.test_get_current_user("student"))
