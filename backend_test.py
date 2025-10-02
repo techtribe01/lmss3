@@ -18,6 +18,7 @@ class LMSAPITester:
         self.session = requests.Session()
         self.tokens = {}  # Store tokens for different users
         self.users = {}   # Store user data
+        self.courses = {}  # Store created courses for testing
         
     def log_test(self, test_name: str, success: bool, message: str = ""):
         status = "✅ PASS" if success else "❌ FAIL"
