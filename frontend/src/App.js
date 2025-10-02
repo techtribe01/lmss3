@@ -382,86 +382,228 @@ const LoginPage = () => {
 
 // Register Page
 const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    username: '', email: '', password: '', full_name: '', role: 'student'
-  });
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { success, error: showError } = useToast();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+    setError,
+    clearErrors
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+    mode: 'onChange'
+  });
+
+  const watchPassword = watch('password', '');
+
+  const roleOptions = [
+    { value: 'student', label: 'Student' },
+    { value: 'mentor', label: 'Mentor' },
+    { value: 'admin', label: 'Admin' }
+  ];
+
+  const onSubmit = async (data) => {
+    clearErrors();
 
     try {
+      // Remove confirmPassword from data before sending
+      const { confirmPassword, ...submitData } = data;
+
       const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed');
+        throw new Error(result.detail || 'Registration failed');
       }
 
-      login(data.access_token, data.user);
+      // Show success message
+      success('Account created successfully! Redirecting to your dashboard...');
       
-      if (data.user.role === 'admin') navigate('/admin');
-      else if (data.user.role === 'mentor') navigate('/mentor');
-      else if (data.user.role === 'student') navigate('/student');
+      // Login user
+      login(result.access_token, result.user);
+      
+      // Navigate based on role with delay for better UX
+      setTimeout(() => {
+        if (result.user.role === 'admin') navigate('/admin');
+        else if (result.user.role === 'mentor') navigate('/mentor');
+        else if (result.user.role === 'student') navigate('/student');
+      }, 500);
     } catch (err) {
-      setError(err.message);
+      showError(err.message, { title: 'Registration Failed' });
+      setError('root', { message: err.message });
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Join our learning platform</p>
+    <motion.div 
+      className="auth-container"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div 
+        className="auth-card"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <motion.h1 
+          className="auth-title"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          Create Account
+        </motion.h1>
+        <motion.p 
+          className="auth-subtitle"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Join our learning platform
+        </motion.p>
         
-        <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
+          <FormValidationSummary errors={errors} />
           
-          <div className="form-group">
-            <label>Full Name</label>
-            <input type="text" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} required placeholder="Enter your full name" />
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Input
+              {...register('full_name')}
+              label="Full Name"
+              placeholder="Enter your full name"
+              icon={User}
+              error={errors.full_name?.message}
+              disabled={isSubmitting}
+              required
+            />
+          </motion.div>
+
+          <div className="form-row">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Input
+                {...register('username')}
+                label="Username"
+                placeholder="Choose a username"
+                icon={User}
+                error={errors.username?.message}
+                disabled={isSubmitting}
+                hint="3-20 characters, letters, numbers, and underscores only"
+                required
+              />
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              <Input
+                {...register('email')}
+                label="Email"
+                type="email"
+                placeholder="Enter your email"
+                icon={Mail}
+                error={errors.email?.message}
+                disabled={isSubmitting}
+                required
+              />
+            </motion.div>
           </div>
 
-          <div className="form-group">
-            <label>Username</label>
-            <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} required placeholder="Choose a username" />
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <PasswordInput
+              {...register('password')}
+              label="Password"
+              placeholder="Create a strong password"
+              error={errors.password?.message}
+              disabled={isSubmitting}
+              showStrength={true}
+              value={watchPassword}
+              required
+            />
+          </motion.div>
 
-          <div className="form-group">
-            <label>Email</label>
-            <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required placeholder="Enter your email" />
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <PasswordInput
+              {...register('confirmPassword')}
+              label="Confirm Password"
+              placeholder="Confirm your password"
+              error={errors.confirmPassword?.message}
+              disabled={isSubmitting}
+              required
+            />
+          </motion.div>
 
-          <div className="form-group">
-            <label>Password</label>
-            <input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required placeholder="Create a password" />
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Select
+              {...register('role')}
+              label="Role"
+              options={roleOptions}
+              placeholder="Select your role"
+              error={errors.role?.message}
+              disabled={isSubmitting}
+              required
+            />
+          </motion.div>
 
-          <div className="form-group">
-            <label>Role</label>
-            <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} required>
-              <option value="student">Student</option>
-              <option value="mentor">Mentor</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-
-          <button type="submit" className="auth-button">Create Account</button>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              isLoading={isSubmitting}
+              disabled={!isValid}
+              className="w-full"
+            >
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </motion.div>
         </form>
 
-        <p className="auth-footer">
+        <motion.p 
+          className="auth-footer"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 
