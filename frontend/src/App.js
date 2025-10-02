@@ -657,6 +657,7 @@ const CoursesManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [editingCourse, setEditingCourse] = useState(null);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [filters, setFilters] = useState({ category: 'All', status: 'All', level: 'All', search: '' });
@@ -666,31 +667,38 @@ const CoursesManagement = () => {
     total_lessons: '', image: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
   });
   const { user } = useAuth();
+  const toast = useToast();
 
   useEffect(() => {
     loadCourses();
   }, [filters]);
 
   const loadCourses = async () => {
+    setIsLoading(true);
     const data = await mockService.getCourses(filters);
     setCourses(data);
+    setIsLoading(false);
   };
+
+  const isFormValid = formData.title.trim().length > 0 && formData.description.trim().length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isFormValid) return;
+
     try {
       if (editingCourse) {
         await mockService.updateCourse(editingCourse.id, formData);
-        alert('Course updated successfully!');
+        toast.success('Course updated successfully!');
       } else {
         await mockService.createCourse({...formData, instructor_id: user.id, instructor_name: user.full_name});
-        alert('Course created successfully!');
+        toast.success('Course created successfully!');
       }
       setShowModal(false);
       resetForm();
       loadCourses();
     } catch (error) {
-      alert('Error: ' + error.message);
+      toast.error('Error: ' + error.message);
     }
   };
 
@@ -702,11 +710,15 @@ const CoursesManagement = () => {
 
   const handleDelete = async () => {
     if (courseToDelete) {
-      await mockService.deleteCourse(courseToDelete.id);
-      alert('Course deleted successfully!');
-      setShowDeleteModal(false);
-      setCourseToDelete(null);
-      loadCourses();
+      try {
+        await mockService.deleteCourse(courseToDelete.id);
+        toast.success('Course deleted successfully!');
+        setShowDeleteModal(false);
+        setCourseToDelete(null);
+        loadCourses();
+      } catch (error) {
+        toast.error('Error deleting course: ' + error.message);
+      }
     }
   };
 
