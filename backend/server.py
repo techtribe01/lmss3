@@ -72,6 +72,40 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
 
+# Course Models
+class CourseCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    mentor_id: Optional[str] = None
+    batch_id: Optional[str] = None
+    zoom_id: Optional[str] = None
+    teams_id: Optional[str] = None
+
+class CourseUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    mentor_id: Optional[str] = None
+    batch_id: Optional[str] = None
+    zoom_id: Optional[str] = None
+    teams_id: Optional[str] = None
+    video_urls: Optional[List[dict]] = None
+
+class CourseResponse(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    mentor_id: Optional[str] = None
+    batch_id: Optional[str] = None
+    zoom_id: Optional[str] = None
+    teams_id: Optional[str] = None
+    approval_status: str
+    video_urls: List[dict] = []
+    created_at: str
+    updated_at: str
+
+class CourseApproval(BaseModel):
+    approval_status: str  # approved, rejected, pending
+
 # Helper Functions
 def create_access_token(data: dict):
     to_encode = data.copy()
