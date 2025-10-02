@@ -150,13 +150,19 @@ async def register(user: UserCreate):
 
 @app.post("/api/auth/login", response_model=Token)
 async def login(credentials: UserLogin):
-    user = await db.users.find_one({"username": credentials.username})
+    # Try to find user by username or email
+    user = await db.users.find_one({
+        "$or": [
+            {"username": credentials.username},
+            {"email": credentials.username}
+        ]
+    })
     
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Invalid username/email or password")
     
     if not verify_password(credentials.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Invalid username/email or password")
     
     # Create access token
     access_token = create_access_token(data={"sub": user["id"], "role": user["role"]})
