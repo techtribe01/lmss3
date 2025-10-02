@@ -152,15 +152,18 @@ backend:
   
   - task: "Get Current User (Supabase)"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Updated get_current_user dependency to query Supabase users table. JWT validation remains the same."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Protected endpoint works correctly. Valid JWT tokens return user data from Supabase. Invalid/missing tokens properly rejected with 401/403 status codes. User data matches registration data."
   
   - task: "Get All Users - Admin Only (Supabase)"
     implemented: true
