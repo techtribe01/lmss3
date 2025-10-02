@@ -233,12 +233,19 @@ const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const isFormValid = username.trim().length > 0 && password.length > 0;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isFormValid) return;
+    
     setError('');
+    setIsLoading(true);
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
@@ -260,36 +267,127 @@ const LoginPage = () => {
       else if (data.user.role === 'student') navigate('/student');
     } catch (err) {
       setError(err.message);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h1 className="auth-title">Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to your LMS account</p>
+    <motion.div 
+      className="auth-container"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div 
+        className="auth-card"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <motion.h1 
+          className="auth-title"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          Welcome Back
+        </motion.h1>
+        <motion.p 
+          className="auth-subtitle"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Sign in to your LMS account
+        </motion.p>
         
         <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="error-message">{error}</div>}
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                className="error-message"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
           
-          <div className="form-group">
+          <motion.div 
+            className={`form-group ${focusedField === 'username' ? 'focused' : ''}`}
+            whileTap={{ scale: 0.99 }}
+          >
             <label>Username or Email</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required placeholder="Enter your username or email" />
-          </div>
+            <input 
+              type="text" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
+              onFocus={() => setFocusedField('username')}
+              onBlur={() => setFocusedField(null)}
+              required 
+              placeholder="Enter your username or email"
+              disabled={isLoading}
+            />
+            {username.length > 0 && username.length < 3 && (
+              <motion.span 
+                className="field-hint"
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                Username/email should be valid
+              </motion.span>
+            )}
+          </motion.div>
 
-          <div className="form-group">
+          <motion.div 
+            className={`form-group ${focusedField === 'password' ? 'focused' : ''}`}
+            whileTap={{ scale: 0.99 }}
+          >
             <label>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Enter your password" />
-          </div>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField(null)}
+              required 
+              placeholder="Enter your password"
+              disabled={isLoading}
+            />
+            {password.length > 0 && password.length < 6 && (
+              <motion.span 
+                className="field-hint"
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                Password should be at least 6 characters
+              </motion.span>
+            )}
+          </motion.div>
 
-          <button type="submit" className="auth-button">Sign In</button>
+          <motion.button 
+            type="submit" 
+            className="auth-button"
+            disabled={!isFormValid || isLoading}
+            whileHover={isFormValid && !isLoading ? { scale: 1.02 } : {}}
+            whileTap={isFormValid && !isLoading ? { scale: 0.98 } : {}}
+          >
+            {isLoading ? 'Signing In...' : 'Sign In'}
+          </motion.button>
         </form>
 
-        <p className="auth-footer">
+        <motion.p 
+          className="auth-footer"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
           Don't have an account? <Link to="/register">Sign up</Link>
-        </p>
-      </div>
-    </div>
+        </motion.p>
+      </motion.div>
+    </motion.div>
   );
 };
 
