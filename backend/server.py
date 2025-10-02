@@ -106,6 +106,78 @@ class CourseResponse(BaseModel):
 class CourseApproval(BaseModel):
     approval_status: str  # approved, rejected, pending
 
+# Enrollment Models
+class EnrollmentCreate(BaseModel):
+    course_id: str
+
+class EnrollmentResponse(BaseModel):
+    id: str
+    student_id: str
+    course_id: str
+    enrollment_date: str
+    completion_status: str
+    certificate_url: Optional[str] = None
+
+class EnrollmentStatusUpdate(BaseModel):
+    completion_status: str  # in_progress, completed, dropped
+
+# Task Models
+class TaskCreate(BaseModel):
+    course_id: str
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[str] = None
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    due_date: Optional[str] = None
+
+class TaskResponse(BaseModel):
+    id: str
+    course_id: str
+    mentor_id: str
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+class TaskSubmissionCreate(BaseModel):
+    task_id: str
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+
+class TaskSubmissionResponse(BaseModel):
+    id: str
+    task_id: str
+    student_id: str
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+    submitted_at: str
+    grade: Optional[float] = None
+    feedback: Optional[str] = None
+    updated_at: str
+
+class TaskGrading(BaseModel):
+    grade: float
+    feedback: Optional[str] = None
+
+# Attendance Models
+class AttendanceCreate(BaseModel):
+    course_id: str
+    date: str
+
+class AttendanceResponse(BaseModel):
+    id: str
+    student_id: str
+    course_id: str
+    date: str
+    check_in: Optional[str] = None
+    check_out: Optional[str] = None
+    ai_alerts: List[dict] = []
+    created_at: str
+
 # Helper Functions
 def create_access_token(data: dict):
     to_encode = data.copy()
