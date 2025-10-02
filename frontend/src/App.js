@@ -772,15 +772,39 @@ const CoursesManagement = () => {
         </div>
       </div>
 
-      {courses.length === 0 ? (
-        <div className="empty-state-large">
+      {isLoading ? (
+        <div className="courses-grid">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : courses.length === 0 ? (
+        <motion.div 
+          className="empty-state-large"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
           <div className="empty-icon">📚</div>
           <h3>No Courses Found</h3>
           <p>Create your first course to get started</p>
-          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Create Course</button>
-        </div>
+          <motion.button 
+            className="btn-primary" 
+            onClick={() => setShowModal(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            + Create Course
+          </motion.button>
+        </motion.div>
       ) : (
-        <div className="courses-grid">
+        <motion.div 
+          className="courses-grid"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.1 } }
+          }}
+        >
           {courses.map(course => (
             <div key={course.id} className="course-card">
               <div className="course-image" style={{ background: course.image }}>
