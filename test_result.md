@@ -257,15 +257,18 @@ backend:
 
   - task: "Course Management - Approve/Reject Course"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented PUT /api/courses/{course_id}/approve. Admin-only endpoint to approve/reject/set pending status for courses."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Course approval workflow works perfectly. Admin can approve, reject, and set pending status. Mentors and students correctly denied approval access (403). Complete workflow tested: pending → approved → student access granted → rejected → student access revoked. Status updates properly persisted in database."
 
   - task: "Course Management - Get Mentor Courses"
     implemented: true
