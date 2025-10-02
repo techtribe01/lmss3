@@ -954,58 +954,136 @@ const StudentManagement = () => {
 };
 
 const ReportsOverview = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [attendance, setAttendance] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    const attendanceData = await mockService.getAttendance({});
+    setAttendance(attendanceData);
+    
+    const gradesData = await mockService.getGrades({});
+    setGrades(gradesData);
+    
+    const coursesData = await mockService.getCourses({});
+    setCourses(coursesData.sort((a, b) => b.total_students - a.total_students).slice(0, 5));
+  };
+
   return (
     <div className="page-wrapper">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Reports Overview</h1>
-          <p className="page-subtitle">View system-wide reports and analytics</p>
+          <h1 className="page-title">Reports & Analytics</h1>
+          <p className="page-subtitle">View attendance, grades and system analytics</p>
         </div>
         <button className="btn-primary">📥 Export Report</button>
       </div>
 
-      <div className="stats-grid">
-        <StatCard icon="📈" label="Course Completion Rate" value="78%" trend="↑ 5% vs last month" color="green" />
-        <StatCard icon="⏱️" label="Avg. Study Time" value="12.5 hrs" trend="↑ 2.3 hrs" color="blue" />
-        <StatCard icon="🎓" label="Certificates Issued" value="324" trend="↑ 45 this week" color="purple" />
-        <StatCard icon="💵" label="Monthly Revenue" value="$52,340" trend="↑ 18% growth" color="orange" />
+      <div className="tabs-container">
+        <div className="tabs">
+          <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('overview')}>Overview</button>
+          <button className={`tab ${activeTab === 'attendance' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('attendance')}>Attendance</button>
+          <button className={`tab ${activeTab === 'grades' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('grades')}>Grades</button>
+        </div>
       </div>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-card">
-          <div className="card-header">
-            <h3>Enrollment Trends</h3>
-            <select className="filter-select-sm">
-              <option>Last 6 months</option>
-            </select>
+      {activeTab === 'overview' && (
+        <>
+          <div className="stats-grid">
+            <StatCard icon="📚" label="Total Courses" value={courses.length} trend="Active" color="blue" />
+            <StatCard icon="📝" label="Attendance Records" value={attendance.length} trend="Total marked" color="green" />
+            <StatCard icon="🎯" label="Grades Recorded" value={grades.length} trend="Assessments" color="purple" />
+            <StatCard icon="⭐" label="Avg Grade" value="B+" trend="Overall performance" color="orange" />
           </div>
-          <div className="chart-placeholder">
-            <div className="line-chart">
-              <div className="chart-line"></div>
-              <div className="chart-grid"></div>
-              <p className="chart-note">📊 Line chart visualization placeholder</p>
+
+          <div className="dashboard-card">
+            <div className="card-header">
+              <h3>Top Performing Courses</h3>
             </div>
+            {courses.length === 0 ? (
+              <div className="empty-state">
+                <p>📊 No course data available</p>
+              </div>
+            ) : (
+              <div className="ranking-list">
+                {courses.map((course, i) => (
+                  <div key={course.id} className="ranking-item">
+                    <span className="rank-number">#{i+1}</span>
+                    <div className="rank-content">
+                      <p className="rank-title">{course.title}</p>
+                      <p className="text-muted">{course.instructor_name}</p>
+                    </div>
+                    <span className="rank-value">{course.total_students} students</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        </>
+      )}
 
+      {activeTab === 'attendance' && (
         <div className="dashboard-card">
           <div className="card-header">
-            <h3>Top Performing Courses</h3>
+            <h3>Attendance Records</h3>
+            <p className="text-muted">All attendance entries</p>
           </div>
-          <div className="ranking-list">
-            {['React Masterclass', 'Python for Beginners', 'UI/UX Design', 'Data Science 101', 'Node.js Advanced'].map((course, i) => (
-              <div key={i} className="ranking-item">
-                <span className="rank-number">#{i+1}</span>
-                <div className="rank-content">
-                  <p className="rank-title">{course}</p>
-                  <div className="mini-progress"><div style={{width: `${90-i*10}%`}}></div></div>
-                </div>
-                <span className="rank-value">{450-i*50} students</span>
-              </div>
-            ))}
-          </div>
+          {attendance.length === 0 ? (
+            <div className="empty-state">
+              <p>📅 No attendance records found</p>
+            </div>
+          ) : (
+            <DataTable 
+              columns={['Date', 'Batch', 'Student', 'Status', 'Marked By']}
+              data={attendance.map(record => [
+                new Date(record.date).toLocaleDateString(),
+                record.batch_name,
+                record.student_name,
+                <span className={`badge badge-${record.status === 'present' ? 'success' : 'danger'}`}>
+                  {record.status}
+                </span>,
+                'Mentor'
+              ])}
+            />
+          )}
         </div>
-      </div>
+      )}
+
+      {activeTab === 'grades' && (
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3>Grade Records</h3>
+            <p className="text-muted">All assessment grades</p>
+          </div>
+          {grades.length === 0 ? (
+            <div className="empty-state">
+              <p>🎯 No grade records found</p>
+            </div>
+          ) : (
+            <DataTable 
+              columns={['Student', 'Course', 'Assessment', 'Score', 'Grade', 'Date']}
+              data={grades.map(grade => [
+                grade.student_name,
+                grade.course_name,
+                `${grade.assessment_type}: ${grade.assessment_name}`,
+                `${grade.score}/${grade.max_score}`,
+                <span className={`badge badge-${grade.grade.includes('A') ? 'success' : grade.grade.includes('B') ? 'primary' : 'warning'}`}>
+                  {grade.grade}
+                </span>,
+                new Date(grade.graded_at).toLocaleDateString()
+              ])}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };
