@@ -314,10 +314,10 @@ class LMSAPITester:
         # Test 3: Duplicate Registration (try to register with existing email)
         results.append(self.test_duplicate_registration())
         
-        # Test 4: User Login (use existing users from database)
-        results.append(self.test_login("admin", "admin1", "password123"))
-        results.append(self.test_login("mentor", "mentor1", "password123"))
-        results.append(self.test_login("student", "student1", "password123"))
+        # Test 4: User Login (use newly registered users)
+        results.append(self.test_login("admin", f"test_admin_{timestamp}", "admin123"))
+        results.append(self.test_login("mentor", f"test_mentor_{timestamp}", "mentor123"))
+        results.append(self.test_login("student", f"test_student_{timestamp}", "student123"))
         
         # Test 5: Invalid Login
         results.append(self.test_invalid_login())
