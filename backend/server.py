@@ -178,6 +178,141 @@ class AttendanceResponse(BaseModel):
     ai_alerts: List[dict] = []
     created_at: str
 
+class AttendanceUpdate(BaseModel):
+    check_in: Optional[str] = None
+    check_out: Optional[str] = None
+    ai_alerts: Optional[List[dict]] = None
+
+# Materials Management Models
+class MaterialCreate(BaseModel):
+    course_id: str
+    title: str
+    description: Optional[str] = None
+    file_url: str
+    material_type: str  # document, video, image, other
+
+class MaterialUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    file_url: Optional[str] = None
+    material_type: Optional[str] = None
+
+class MaterialResponse(BaseModel):
+    id: str
+    course_id: str
+    mentor_id: str
+    title: str
+    description: Optional[str] = None
+    file_url: str
+    material_type: str
+    is_visible: bool
+    created_at: str
+    updated_at: str
+
+# Certificate Generation Models
+class CertificateGenerate(BaseModel):
+    course_id: str
+    student_id: str
+    completion_date: Optional[str] = None
+
+class CertificateResponse(BaseModel):
+    id: str
+    student_id: str
+    course_id: str
+    certificate_url: str
+    issued_date: str
+    completion_date: str
+    created_at: str
+
+# Fee Reminder Models
+class FeeReminderCreate(BaseModel):
+    student_id: str
+    amount: float
+    due_date: str
+    description: Optional[str] = None
+
+class FeeReminderUpdate(BaseModel):
+    amount: Optional[float] = None
+    due_date: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+
+class FeeReminderResponse(BaseModel):
+    id: str
+    student_id: str
+    amount: float
+    due_date: str
+    description: Optional[str] = None
+    status: str  # pending, paid, overdue
+    created_at: str
+    updated_at: str
+
+# Mock Interview Models
+class MockInterviewCreate(BaseModel):
+    student_id: str
+    mentor_id: str
+    scheduled_date: str
+    type: str  # technical, behavioral, system_design
+    duration: Optional[int] = 60  # minutes
+
+class MockInterviewUpdate(BaseModel):
+    scheduled_date: Optional[str] = None
+    type: Optional[str] = None
+    duration: Optional[int] = None
+    status: Optional[str] = None
+
+class MockInterviewResponse(BaseModel):
+    id: str
+    student_id: str
+    mentor_id: str
+    scheduled_date: str
+    type: str
+    duration: int
+    status: str  # scheduled, completed, cancelled
+    feedback: Optional[str] = None
+    score: Optional[float] = None
+    created_at: str
+    updated_at: str
+
+class InterviewFeedback(BaseModel):
+    feedback: str
+    score: float
+
+# Progress Report Models
+class ProgressReportResponse(BaseModel):
+    student_id: str
+    course_id: Optional[str] = None
+    enrollment_count: int
+    completed_courses: int
+    total_tasks: int
+    completed_tasks: int
+    attendance_percentage: float
+    average_grade: Optional[float] = None
+    certificates_earned: int
+    last_activity: Optional[str] = None
+
+# Email Notification Models
+class EmailNotificationCreate(BaseModel):
+    recipient_email: str
+    subject: str
+    message: str
+    template_type: Optional[str] = None
+
+class EmailTemplateCreate(BaseModel):
+    name: str
+    subject: str
+    content: str
+    template_type: str  # fee_reminder, task_due, course_approval, certificate
+
+class EmailTemplateResponse(BaseModel):
+    id: str
+    name: str
+    subject: str
+    content: str
+    template_type: str
+    created_at: str
+    updated_at: str
+
 # Helper Functions
 def create_access_token(data: dict):
     to_encode = data.copy()
