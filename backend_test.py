@@ -103,10 +103,10 @@ class LMSAPITester:
         """Test duplicate username/email registration"""
         print("🔍 Testing Duplicate Registration...")
         
-        # Try to register with existing username
+        # Try to register with existing email (we know admin@lms.com exists)
         duplicate_data = {
-            "username": "admin_user",  # This should already exist
-            "email": "duplicate@test.com",
+            "username": "new_unique_user",
+            "email": "admin@lms.com",  # This email already exists
             "password": "password123",
             "full_name": "Duplicate User",
             "role": "student"
@@ -115,19 +115,19 @@ class LMSAPITester:
         success, response, error = self.make_request("POST", "/auth/register", duplicate_data)
         
         if not success:
-            self.log_test("Duplicate Username", False, f"Request failed: {error}")
+            self.log_test("Duplicate Email", False, f"Request failed: {error}")
             return False
             
         if response.status_code == 400:
             data = response.json()
             if "already exists" in data.get("detail", "").lower():
-                self.log_test("Duplicate Username", True, "Correctly rejected duplicate username")
+                self.log_test("Duplicate Email", True, "Correctly rejected duplicate email")
                 return True
             else:
-                self.log_test("Duplicate Username", False, f"Wrong error message: {data}")
+                self.log_test("Duplicate Email", False, f"Wrong error message: {data}")
                 return False
         else:
-            self.log_test("Duplicate Username", False, f"Expected 400, got {response.status_code}")
+            self.log_test("Duplicate Email", False, f"Expected 400, got {response.status_code}")
             return False
     
     def test_login(self, role: str, username: str, password: str) -> bool:
