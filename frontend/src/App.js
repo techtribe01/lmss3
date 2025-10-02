@@ -230,44 +230,52 @@ const SearchFilter = ({ onSearch, filters }) => (
 
 // Login Page
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { success, error: showError } = useToast();
 
-  const isFormValid = username.trim().length > 0 && password.length > 0;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isValid },
+    setError,
+    clearErrors
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange'
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!isFormValid) return;
-    
-    setError('');
-    setIsLoading(true);
+  const onSubmit = async (data) => {
+    clearErrors();
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify(data)
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Login failed');
+        throw new Error(result.detail || 'Login failed');
       }
 
-      login(data.access_token, data.user);
+      // Show success message
+      success('Welcome back! Redirecting to your dashboard...');
       
-      if (data.user.role === 'admin') navigate('/admin');
-      else if (data.user.role === 'mentor') navigate('/mentor');
-      else if (data.user.role === 'student') navigate('/student');
+      // Login user
+      login(result.access_token, result.user);
+      
+      // Navigate based on role with delay for better UX
+      setTimeout(() => {
+        if (result.user.role === 'admin') navigate('/admin');
+        else if (result.user.role === 'mentor') navigate('/mentor');
+        else if (result.user.role === 'student') navigate('/student');
+      }, 500);
     } catch (err) {
-      setError(err.message);
-      setIsLoading(false);
+      showError(err.message, { title: 'Login Failed' });
+      setError('root', { message: err.message });
     }
   };
 
