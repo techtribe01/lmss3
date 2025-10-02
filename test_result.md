@@ -242,15 +242,18 @@ backend:
 
   - task: "Course Management - Delete Course"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented DELETE /api/courses/{course_id}. Admin-only endpoint to delete courses."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Course deletion works perfectly. Admin can successfully delete courses. Mentors and students correctly denied delete access (403). Course properly removed from Supabase database."
 
   - task: "Course Management - Approve/Reject Course"
     implemented: true
