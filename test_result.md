@@ -122,15 +122,18 @@ backend:
 
   - task: "User Authentication - Register (Supabase)"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Migrated registration endpoint from MongoDB to Supabase. Uses Supabase Python client with service_role_key. Validates unique username/email, stores password_hash in users table."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Registration works for all roles (admin, mentor, student). Unique username/email constraints enforced. Passwords properly hashed with bcrypt. Data persisted in Supabase database. JWT tokens generated correctly."
   
   - task: "User Authentication - Login (Supabase)"
     implemented: true
