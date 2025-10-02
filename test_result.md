@@ -137,15 +137,18 @@ backend:
   
   - task: "User Authentication - Login (Supabase)"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Migrated login endpoint to Supabase. Uses .or_() query to search by username OR email. Verifies password_hash from Supabase database."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Login works with both username AND email. Fixed Supabase Python client OR query issue (v1.0.3 doesn't support .or_() method). Password verification works correctly. Invalid credentials properly rejected. JWT tokens generated on successful login."
   
   - task: "Get Current User (Supabase)"
     implemented: true
