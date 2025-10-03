@@ -1424,6 +1424,30 @@ class LMSAPITester:
         task_results = self.run_task_management_tests()
         results.extend(task_results)
         
+        # Test 12: Attendance Tracking System Tests
+        attendance_results = self.run_attendance_tests()
+        results.extend(attendance_results)
+        
+        # Test 13: Materials Management System Tests
+        materials_results = self.run_materials_tests()
+        results.extend(materials_results)
+        
+        # Test 14: Certificate Generation System Tests
+        certificate_results = self.run_certificate_tests()
+        results.extend(certificate_results)
+        
+        # Test 15: Fee Reminder System Tests
+        fee_reminder_results = self.run_fee_reminder_tests()
+        results.extend(fee_reminder_results)
+        
+        # Test 16: Mock Interview System Tests
+        interview_results = self.run_mock_interview_tests()
+        results.extend(interview_results)
+        
+        # Test 17: Progress Reporting System Tests
+        progress_results = self.run_progress_reporting_tests()
+        results.extend(progress_results)
+        
         # Summary
         print("\n" + "=" * 60)
         print("📊 COMPREHENSIVE TEST SUMMARY")
