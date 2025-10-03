@@ -2,29 +2,13 @@
   "version": 2,
   "buildCommand": "cd frontend && yarn install && yarn build",
   "outputDirectory": "frontend/build",
+  "installCommand": "cd frontend && yarn install",
+  "devCommand": "cd frontend && yarn start",
   "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/manifest.json"
-    },
-    {
-      "src": "/favicon.ico",
-      "dest": "/favicon.ico"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
     }
   ],
   "headers": [
