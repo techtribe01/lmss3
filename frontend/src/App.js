@@ -2400,38 +2400,9 @@ const Certificates = () => {
 };
 
 // Mentor Pages (Continued from Admin/Student)
-const MentorDashboard = () => (
-  <div className="page-wrapper">
-    <div className="page-header">
-      <h1 className="page-title">Mentor Dashboard</h1>
-      <p className="page-subtitle">Your teaching overview and quick actions</p>
-    </div>
-    <div className="stats-grid">
-      <StatCard icon="📚" label="Active Courses" value="5" trend="2 new this month" color="blue" />
-      <StatCard icon="👥" label="Total Students" value="287" trend="↑ 45 this month" color="green" />
-      <StatCard icon="📝" label="Pending Tasks" value="12" trend="Needs review" color="orange" />
-      <StatCard icon="⭐" label="Avg. Rating" value="4.8" trend="Excellent!" color="purple" />
-    </div>
-    <div className="coming-soon-banner">
-      <span className="placeholder-icon">🚧</span>
-      <p>Detailed mentor dashboard coming soon...</p>
-    </div>
-  </div>
-);
-
-const MentorCourses = () => (
-  <div className="page-wrapper">
-    <div className="page-header">
-      <h1 className="page-title">My Courses</h1>
-      <p className="page-subtitle">View and edit your courses</p>
-    </div>
-    <div className="coming-soon-banner">
-      <span className="placeholder-icon">🚧</span>
-      <p>Course management interface coming soon...</p>
-    </div>
-  </div>
-);
-
+// Mentor Dashboard Components - Now using dedicated components from /components/mentor/
+const MentorDashboard = () => <MentorDashboardMain />;
+const MentorCourses = () => <MentorCoursesPage />;
 const VideoSessions = () => (
   <div className="page-wrapper">
     <div className="page-header">
@@ -2441,74 +2412,17 @@ const VideoSessions = () => (
     <div className="coming-soon-banner">
       <span className="placeholder-icon">🚧</span>
       <p>Video session integration coming soon...</p>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+        Configure video links in Course Edit page
+      </p>
     </div>
   </div>
 );
-
-const TaskAssignment = () => (
-  <div className="page-wrapper">
-    <div className="page-header">
-      <h1 className="page-title">Task Assignment</h1>
-      <p className="page-subtitle">Create and assign tasks to students</p>
-    </div>
-    <div className="coming-soon-banner">
-      <span className="placeholder-icon">🚧</span>
-      <p>Task assignment interface coming soon...</p>
-    </div>
-  </div>
-);
-
-const AttendanceManagement = () => (
-  <div className="page-wrapper">
-    <div className="page-header">
-      <h1 className="page-title">Attendance Management</h1>
-      <p className="page-subtitle">Track student attendance</p>
-    </div>
-    <div className="coming-soon-banner">
-      <span className="placeholder-icon">🚧</span>
-      <p>Attendance management coming soon...</p>
-    </div>
-  </div>
-);
-
-const ProgressTracking = () => (
-  <div className="page-wrapper">
-    <div className="page-header">
-      <h1 className="page-title">Progress Tracking</h1>
-      <p className="page-subtitle">Monitor student progress</p>
-    </div>
-    <div className="coming-soon-banner">
-      <span className="placeholder-icon">🚧</span>
-      <p>Progress tracking interface coming soon...</p>
-    </div>
-  </div>
-);
-
-const MaterialsUpload = () => (
-  <div className="page-wrapper">
-    <div className="page-header">
-      <h1 className="page-title">Materials Upload</h1>
-      <p className="page-subtitle">Upload course materials and resources</p>
-    </div>
-    <div className="coming-soon-banner">
-      <span className="placeholder-icon">🚧</span>
-      <p>Materials upload interface coming soon...</p>
-    </div>
-  </div>
-);
-
-const CertificateGeneration = () => (
-  <div className="page-wrapper">
-    <div className="page-header">
-      <h1 className="page-title">Certificate Generation</h1>
-      <p className="page-subtitle">Generate certificates for students</p>
-    </div>
-    <div className="coming-soon-banner">
-      <span className="placeholder-icon">🚧</span>
-      <p>Certificate generation coming soon...</p>
-    </div>
-  </div>
-);
+const TaskAssignment = () => <TaskAssignmentPage />;
+const AttendanceManagement = () => <AttendancePage />;
+const ProgressTracking = () => <ProgressTrackingPage />;
+const MaterialsUpload = () => <MaterialsPage />;
+const CertificateGeneration = () => <CertificatesPage />;
 
 // Menu Items
 const adminMenuItems = [
