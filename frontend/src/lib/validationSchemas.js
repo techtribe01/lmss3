@@ -22,7 +22,13 @@ const usernameSchema = z
   .max(20, 'Username must be less than 20 characters')
   .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
 
-// Login form schema
+// Supabase Login form schema (email only)
+export const supabaseLoginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Password is required'),
+});
+
+// Original Login form schema (username or email)
 export const loginSchema = z.object({
   username: z.string().min(1, 'Username or email is required'),
   password: z.string().min(1, 'Password is required'),
