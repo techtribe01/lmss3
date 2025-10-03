@@ -9,8 +9,8 @@ import json
 import sys
 from typing import Dict, Any, Optional
 
-# Get backend URL from frontend .env
-BACKEND_URL = "https://securelearn-4.preview.emergentagent.com/api"
+# Get backend URL from supervisor configuration
+BACKEND_URL = "https://ab645796-3efa-414a-bdae-d3ea0d5265cc.preview.emergentagent.com/api"
 
 class LMSAPITester:
     def __init__(self):
