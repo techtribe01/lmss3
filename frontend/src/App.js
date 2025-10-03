@@ -11,11 +11,10 @@ import { Input, PasswordInput, Select, Button, FormValidationSummary } from './c
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { SkeletonCard, SkeletonTable, SkeletonStat, SkeletonList } from './components/SkeletonLoader';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Auth from './pages/Auth';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-
-// Auth Context
-const AuthContext = createContext(null);
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
