@@ -409,9 +409,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             id=user["id"],
             username=user["username"],
             email=user["email"],
-        full_name=user["full_name"],
-        role=user["role"]
-    )
+            full_name=user["full_name"],
+            role=user["role"]
+        )
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
