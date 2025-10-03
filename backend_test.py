@@ -2170,6 +2170,12 @@ class LMSAPITester:
             print("✅ Course management system: WORKING")
             print("✅ Enrollment management system: WORKING")
             print("✅ Task/assignment management system: WORKING")
+            print("✅ Attendance tracking system: WORKING")
+            print("✅ Materials management system: WORKING")
+            print("✅ Certificate generation system: WORKING")
+            print("✅ Fee reminder system: WORKING")
+            print("✅ Mock interview system: WORKING")
+            print("✅ Progress reporting system: WORKING")
             return True
         else:
             print(f"\n⚠️  {total - passed} test(s) failed. Please check the issues above.")
