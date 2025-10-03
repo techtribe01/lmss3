@@ -13,6 +13,13 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import { SkeletonCard, SkeletonTable, SkeletonStat, SkeletonList } from './components/SkeletonLoader';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './pages/Auth';
+import MentorDashboardMain from './components/mentor/MentorDashboardMain';
+import MentorCoursesPage from './components/mentor/MentorCoursesPage';
+import TaskAssignmentPage from './components/mentor/TaskAssignmentPage';
+import AttendancePage from './components/mentor/AttendancePage';
+import ProgressTrackingPage from './components/mentor/ProgressTrackingPage';
+import MaterialsPage from './components/mentor/MaterialsPage';
+import CertificatesPage from './components/mentor/CertificatesPage';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
