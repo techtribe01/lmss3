@@ -366,21 +366,49 @@ def verify_token(token: str):
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     payload = verify_token(token)
+    
+    # Handle Supabase JWT payload
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     
-    # Query Supabase for user
-    result = supabase.table("users").select("*").eq("id", user_id).execute()
-    
-    if not result.data or len(result.data) == 0:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    user = result.data[0]
-    return UserBase(
-        id=user["id"],
-        username=user["username"],
-        email=user["email"],
+    # Check if this is a Supabase token (has 'aud' field)
+    if payload.get("aud") == "authenticated":
+        # This is a Supabase token, extract user info from the token
+        email = payload.get("email")
+        user_metadata = payload.get("user_metadata", {})
+        
+        if not email:
+            raise HTTPException(status_code=401, detail="Email not found in token")
+        
+        # Extract user data from Supabase token metadata
+        user_data = {
+            "id": user_id,
+            "email": email,
+            "username": user_metadata.get("username", email),
+            "full_name": user_metadata.get("full_name", email),
+            "role": user_metadata.get("role", "student")
+        }
+        
+        return UserBase(
+            id=user_data["id"],
+            username=user_data["username"],
+            email=user_data["email"],
+            full_name=user_data["full_name"],
+            role=user_data["role"]
+        )
+    else:
+        # Legacy token, query Supabase for user data
+        result = supabase.table("users").select("*").eq("id", user_id).execute()
+        
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        user = result.data[0]
+        return UserBase(
+            id=user["id"],
+            username=user["username"],
+            email=user["email"],
         full_name=user["full_name"],
         role=user["role"]
     )
