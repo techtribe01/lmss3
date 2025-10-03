@@ -8,23 +8,35 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if Supabase is configured
+    if (!supabase) {
+      console.warn('Supabase not configured. Authentication features disabled.');
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const userData = {
-          id: session.user.id,
-          email: session.user.email,
-          full_name: session.user.user_metadata?.full_name || session.user.email,
-          username: session.user.user_metadata?.username || session.user.email,
-          role: session.user.user_metadata?.role || 'student'
-        };
-        setUser(userData);
-        // Store token for API calls
-        localStorage.setItem('supabase_token', session.access_token);
-        localStorage.setItem('user', JSON.stringify(userData));
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const userData = {
+            id: session.user.id,
+            email: session.user.email,
+            full_name: session.user.user_metadata?.full_name || session.user.email,
+            username: session.user.user_metadata?.username || session.user.email,
+            role: session.user.user_metadata?.role || 'student'
+          };
+          setUser(userData);
+          // Store token for API calls
+          localStorage.setItem('supabase_token', session.access_token);
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getSession();
@@ -62,7 +74,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
     localStorage.removeItem('supabase_token');
     localStorage.removeItem('user');
