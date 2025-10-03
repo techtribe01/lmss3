@@ -2545,8 +2545,9 @@ function App() {
         <Router>
           <AuthProvider>
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/login" element={<Navigate to="/auth" replace />} />
+              <Route path="/register" element={<Navigate to="/auth" replace />} />
               
               <Route path="/admin/*" element={
                 <ProtectedRoute allowedRoles={['admin']}>
