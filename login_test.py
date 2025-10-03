@@ -9,7 +9,7 @@ import sys
 import time
 
 # Backend URL
-BACKEND_URL = "https://auth-refactor-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://mentor-dash-fix.preview.emergentagent.com/api"
 
 def log_test(test_name: str, success: bool, message: str = ""):
     status = "✅ PASS" if success else "❌ FAIL"

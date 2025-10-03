@@ -10,7 +10,7 @@ import sys
 from typing import Dict, Any, Optional
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://auth-refactor-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://mentor-dash-fix.preview.emergentagent.com/api"
 
 class MissingFeaturesDetector:
     def __init__(self):

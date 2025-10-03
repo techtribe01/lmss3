@@ -7,7 +7,7 @@ import requests
 import json
 import time
 
-BACKEND_URL = "https://auth-refactor-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://mentor-dash-fix.preview.emergentagent.com/api"
 
 def test_data_persistence():
     """Test that user data persists in Supabase database"""
