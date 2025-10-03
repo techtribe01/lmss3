@@ -8,7 +8,7 @@ import requests
 import json
 import sys
 
-BACKEND_URL = "https://mentor-dash-fix.preview.emergentagent.com/api"
+BACKEND_URL = "https://vercel-routing-fix-1.preview.emergentagent.com/api"
 
 def test_approval_workflow():
     """Test the complete approval workflow"""
