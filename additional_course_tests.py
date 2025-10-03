@@ -8,7 +8,7 @@ import requests
 import json
 import sys
 
-BACKEND_URL = "https://lms-audit.preview.emergentagent.com/api"
+BACKEND_URL = "https://securelearn-4.preview.emergentagent.com/api"
 
 def test_approval_workflow():
     """Test the complete approval workflow"""

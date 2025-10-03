@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv('/app/backend/.env')
 
-BACKEND_URL = "https://lms-audit.preview.emergentagent.com/api"
+BACKEND_URL = "https://securelearn-4.preview.emergentagent.com/api"
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
 
