@@ -10,6 +10,9 @@ import jwt
 import bcrypt
 import uuid
 from supabase import create_client, Client
+import json
+import base64
+import requests
 
 # Load environment variables
 load_dotenv()
