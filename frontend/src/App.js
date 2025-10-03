@@ -2523,8 +2523,6 @@ function App() {
                   </DashboardLayout>
                 </ProtectedRoute>
               } />
-              
-              <Route path="/" element={<Navigate to="/auth" />} />
             </Routes>
           </AuthProvider>
         </Router>
