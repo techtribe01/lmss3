@@ -598,6 +598,105 @@ frontend:
         agent: "main"
         comment: "Implemented React Context for authentication state management. Persists user data and token in localStorage."
 
+  - task: "Login/Signup Input Visibility Fix"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/ui/input.jsx, /app/frontend/src/components/ui/textarea.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Fixed input text visibility issue by updating Input and Textarea components with proper contrast. Changed from bg-transparent to bg-white/dark:bg-gray-800 with explicit text colors (text-gray-900/dark:text-gray-100). Added proper focus states with ring-2 and blue-500 color. Placeholder text now uses gray-400/gray-500 for better visibility. Follows WCAG AA contrast standards."
+      - working: true
+        agent: "main"
+        comment: "✅ FIXED: Input fields now have strong contrast with white background and dark gray text. Focus states show blue ring. Works in both light and dark themes. All form inputs (login, signup, task creation, etc.) now have readable text."
+
+  - task: "Mentor Dashboard - Main Overview"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/mentor/MentorDashboardMain.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented comprehensive mentor dashboard with: 1) Stats cards showing active courses, total students, pending tasks, avg rating, 2) Notifications panel with alerts for submissions, attendance issues, task deadlines, reviews, 3) Recent activity timeline, 4) Quick action buttons for common tasks. Uses mock data from mockService. Responsive design with Tailwind CSS."
+
+  - task: "Mentor Dashboard - Course Management"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/mentor/MentorCoursesPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented course management page with: 1) Grid view of mentor's courses with cards, 2) Edit course modal with all fields (title, description, category, level, duration, price), 3) Zoom/Teams integration placeholders (zoom_link and teams_link fields), 4) Search functionality, 5) Course status badges (active/pending), 6) Student count, lesson count, and rating display. Uses mockService for CRUD operations."
+
+  - task: "Mentor Dashboard - Task Assignment"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/mentor/TaskAssignmentPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented task assignment system with: 1) Create task modal with course selection, title, description, due date, max score, 2) Task cards showing submissions count (total, pending, graded), 3) Filter by status (all/active/completed), 4) View submissions button, 5) Empty states for no tasks. Integrates with mockService for task CRUD operations."
+
+  - task: "Mentor Dashboard - Attendance Management"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/mentor/AttendancePage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented attendance tracking with: 1) Real-time updates using polling (5-second intervals), 2) Course selection dropdown, 3) Student table with present/absent toggle buttons, 4) Attendance percentage display per student, 5) Summary stats (total students, present today, absent today), 6) Save attendance button. Shows last update timestamp. Uses mockService for attendance CRUD."
+
+  - task: "Mentor Dashboard - Progress Tracking"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/mentor/ProgressTrackingPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented student progress tracking with: 1) Overview stats (avg attendance, avg task completion, top performers, students needing attention), 2) Student progress cards with animated progress bars for attendance, tasks completed, course progress, 3) Color-coded performance indicators (green/blue/yellow/red based on percentage), 4) Course filter dropdown, 5) Grid layout with responsive design. Includes visualizations with Framer Motion animations."
+
+  - task: "Mentor Dashboard - Materials Management"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/mentor/MaterialsPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented materials management with: 1) Upload material modal with file selection, title, description, course selection, 2) Material cards showing file icons (PDF, video, image, zip), file size, upload date, download count, 3) View/Download/Delete actions per material, 4) Course filter dropdown, 5) Grid layout. File upload includes progress simulation. Mock materials created for each course."
+
+  - task: "Mentor Dashboard - Certificate Generation"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/mentor/CertificatesPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented certificate generation system with: 1) Generate certificate modal with course selection and student multi-select, 2) Certificate cards showing student name, course, issue date, status (issued/pending), 3) Preview/Download/Email actions per certificate, 4) Course filter dropdown, 5) Bulk certificate generation for multiple students. Backend handles PDF creation (UI triggers only). Uses checkbox selection for students."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
