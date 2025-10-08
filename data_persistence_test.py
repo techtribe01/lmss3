@@ -7,7 +7,7 @@ import requests
 import json
 import time
 
-BACKEND_URL = "https://lms-verify.preview.emergentagent.com/api"
+BACKEND_URL = "https://auth-creds-update.preview.emergentagent.com/api"
 
 def test_data_persistence():
     """Test that user data persists in Supabase database"""

@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://lms-verify.preview.emergentagent.com/api"
+BACKEND_URL = "https://auth-creds-update.preview.emergentagent.com/api"
 
 class ComprehensiveLMSValidator:
     def __init__(self):
