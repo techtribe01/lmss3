@@ -439,16 +439,11 @@ async def register(user: UserCreate):
         raise HTTPException(status_code=400, detail="Invalid role. Must be admin, mentor, or student")
     
     # Create new user (without email and password_hash for current schema)
-    user_id = str(uuid.uuid4())
-    # Skip password hashing since password_hash column doesn't exist
-    
+    # Let database auto-generate ID and timestamps
     new_user = {
-        "id": user_id,
         "username": user.username,
         "full_name": user.full_name,
-        "role": user.role,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "role": user.role
     }
     
     # Insert into Supabase
