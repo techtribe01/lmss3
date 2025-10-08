@@ -29,6 +29,16 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001'
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  console.log('ProtectedRoute check:', { 
+    user: user?.email, 
+    role: user?.role, 
+    allowedRoles, 
+    loading,
+    currentPath: location.pathname 
+  });
 
   if (loading) {
     return (
@@ -45,11 +55,22 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (!user) {
+    console.log('No user, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
 
+  // Check if user has the right role
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    console.log(`User role ${user.role} not in allowed roles ${allowedRoles}, redirecting to correct dashboard`);
+    
+    // Redirect to correct dashboard based on user role
+    const correctPath = user.role === 'admin' ? '/admin' : 
+                       user.role === 'mentor' ? '/mentor' : 
+                       user.role === 'student' ? '/student' : '/';
+                       
+    if (location.pathname !== correctPath) {
+      return <Navigate to={correctPath} replace />;
+    }
   }
 
   return (
