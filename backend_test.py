@@ -10,7 +10,7 @@ import sys
 from typing import Dict, Any, Optional
 
 # Get backend URL from supervisor configuration
-BACKEND_URL = "https://vercel-routing-fix-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://lms-verify.preview.emergentagent.com/api"
 
 class LMSAPITester:
     def __init__(self):
