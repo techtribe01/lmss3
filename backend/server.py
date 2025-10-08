@@ -408,7 +408,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         return UserBase(
             id=user["id"],
             username=user["username"],
-            email=user["email"],
+            email=user.get("email", f"{user['username']}@lms.local"),  # Use username@lms.local if email not available
             full_name=user["full_name"],
             role=user["role"]
         )
