@@ -520,7 +520,7 @@ async def get_users(current_user: UserBase = Depends(get_current_user)):
     return [UserResponse(
         id=u["id"],
         username=u["username"],
-        email=u["email"],
+        email=u.get("email", f"{u['username']}@lms.local"),  # Use default email
         full_name=u["full_name"],
         role=u["role"]
     ) for u in result.data]
