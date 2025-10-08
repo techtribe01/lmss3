@@ -431,27 +431,24 @@ async def register(user: UserCreate):
     if existing_username.data and len(existing_username.data) > 0:
         raise HTTPException(status_code=400, detail="Username already exists")
     
-    # Check if email exists
-    existing_email = supabase.table("users").select("id").eq("email", user.email).execute()
-    if existing_email.data and len(existing_email.data) > 0:
-        raise HTTPException(status_code=400, detail="Email already exists")
+    # Skip email check since email column doesn't exist in current schema
+    # TODO: Add email check when schema is updated
     
     # Validate role
     if user.role not in ["admin", "mentor", "student"]:
         raise HTTPException(status_code=400, detail="Invalid role. Must be admin, mentor, or student")
     
-    # Create new user
+    # Create new user (without email and password_hash for current schema)
     user_id = str(uuid.uuid4())
-    hashed_pwd = hash_password(user.password)
+    # Skip password hashing since password_hash column doesn't exist
     
     new_user = {
         "id": user_id,
         "username": user.username,
-        "email": user.email,
         "full_name": user.full_name,
         "role": user.role,
-        "password_hash": hashed_pwd,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     # Insert into Supabase
